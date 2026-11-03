@@ -30,7 +30,7 @@ export async function portrait(charId, hat = 'none', pose = 'idle') {
     m.update(b, 0.016, 0.3);
     m.shadow.visible = false;
     scene.add(m.root);
-    cam.position.set(0.25, 1.05, 4.1); cam.lookAt(0, 0.78, 0);
+    cam.position.set(0.2, 0.95, 3.15); cam.lookAt(0, 0.74, 0);
     r.render(scene, cam);
     const url = r.domElement.toDataURL('image/png');
     scene.remove(m.root);

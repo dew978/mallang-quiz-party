@@ -128,8 +128,9 @@ export function stepBody(b, c = ctrl0, dt, world) {
   b.moveAmt = ml;
 
   // 가로 속도
-  if (st === 'normal' || st === 'launch') {
-    const acc = b.grounded ? P.accelG : (st === 'launch' ? P.accelA * 0.35 : P.accelA);
+  if (st === 'launch') { /* 슈퍼 점프: 정해진 포물선 그대로 */ }
+  else if (st === 'normal') {
+    const acc = b.grounded ? P.accelG : P.accelA;
     if (ml > 0.05) {
       const tx = mx * speed, tz = mz * speed;
       const k = Math.min(1, acc * dt / Math.max(0.001, Math.hypot(tx - b.vx, tz - b.vz)));
@@ -174,7 +175,7 @@ export function stepBody(b, c = ctrl0, dt, world) {
 
   // 중력
   let g = P.grav;
-  if (b.vy < 0) g *= P.fallMul;
+  if (b.vy < 0 && st !== 'launch') g *= P.fallMul;
   else if (st === 'normal' && !c.jumpHeld && b.vy > 0 && !b.fromPad) g *= P.shortHop;
   if (!b.grounded) b.vy = Math.max(-P.maxFall, b.vy - g * dt);
   if (b.vy <= 0) b.fromPad = false;
@@ -232,10 +233,10 @@ export function stepBody(b, c = ctrl0, dt, world) {
     if (!wasGrounded) { b.landImpact = -b.vy; b.justLanded = true; }
     b.y = bestTop; b.vy = 0; b.grounded = true; b.ground = best; b.groundY = bestTop; b.dived = false;
     if (best.slippery) { /* 미끄러운 바닥은 마찰이 적다: 아래 마찰 보정에서 */ }
-    if (best.bouncePad && b.state !== 'fallen') best.bouncePad(b);
     if (b.state === 'dive') setState(b, 'slide', P.slideTime);
     else if (b.state === 'launch') setState(b, 'normal');
     if (!best.moving && !best.noSafe && b.state === 'normal') { b.lastSafe.x = b.x; b.lastSafe.y = b.y; b.lastSafe.z = b.z; }
+    if (best.bouncePad && b.state !== 'fallen') best.bouncePad(b);
   } else {
     b.grounded = false; b.ground = null;
     // 그림자용 아래 바닥 높이
@@ -259,9 +260,9 @@ export function stepBody(b, c = ctrl0, dt, world) {
 export function collideBodies(list) {
   const R2 = P.r * 2;
   for (let i = 0; i < list.length; i++) {
-    const a = list[i]; if (a.state === 'fallen' || a.ghost) continue;
+    const a = list[i]; if (a.state === 'fallen' || a.state === 'launch' || a.ghost) continue;
     for (let j = i + 1; j < list.length; j++) {
-      const b = list[j]; if (b.state === 'fallen' || b.ghost) continue;
+      const b = list[j]; if (b.state === 'fallen' || b.state === 'launch' || b.ghost) continue;
       const dy = a.y - b.y;
       if (Math.abs(dy) > P.h * 0.92) continue;
       const dx = a.x - b.x, dz = a.z - b.z, d = Math.hypot(dx, dz);

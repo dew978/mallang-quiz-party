@@ -303,7 +303,7 @@ async function buildShop() {
 function btn(t, c) { const b = document.createElement('button'); b.className = 'btn ' + c; b.textContent = t; return b; }
 
 // ---------- 혼자 파티: 모드 → 캐릭터 ----------
-const MODES = [{ id: 'show', name: '파티 쇼', icon: '🎉', rule: '라운드 3개! 별을 가장 많이 모으면 우승', how: '약 6분 · 문제 18개' }, ...ROUNDS.filter(r => r.id !== 'tower').map(r => ({ ...r }))];
+const MODES = [{ id: 'show', name: '파티 쇼', icon: '🎉', rule: '라운드 3개 + 결승! 별을 가장 많이 모으면 우승', how: '약 8분 · 문제 22개' }, ...ROUNDS.map(r => ({ ...r }))];
 let modeIdx = 0, charIdx = 0, lastSetup = null;
 function pickMode() {
   go('pick');
@@ -311,7 +311,7 @@ function pickMode() {
   setCoins($('pickCoins'));
   $('botSel').style.display = '';
   seg($('botSel'), [['easy', '봇 쉬움'], ['normal', '봇 보통'], ['hard', '봇 어려움']], save.settings.bots, v => save.settings.bots = v);
-  const cards = MODES.map(m => ({ title: m.name, sub: m.id === 'show' ? '전체 파티' : '라운드 연습', img: `assets/images/round_${m.id}.jpg`, emoji: m.icon }));
+  const cards = MODES.map(m => ({ title: m.name, sub: m.id === 'show' ? '전체 파티' : '라운드 연습', img: m.id === 'show' ? 'assets/images/title.png' : `assets/images/round_${m.id}.jpg`, emoji: m.icon }));
   const info = () => { const m = MODES[modeIdx]; $('pickInfo').innerHTML = `<b>${m.name}</b> · ${m.rule}<br><small>${m.how}</small>`; };
   cover($('pickCover'), cards, modeIdx, i => { modeIdx = i; info(); }, () => $('pickGo').click());
   info();
@@ -379,7 +379,7 @@ async function showRows(box, rows, gains) {
   for (const [i, r] of rows.entries()) {
     const d = document.createElement('div'); d.className = 'brow' + (r.me ? ' me' : ''); d.style.animationDelay = (i * 0.05) + 's';
     const img = await portrait(r.charId, r.hat || 'none');
-    d.innerHTML = `<div class="rk">${i + 1}</div><img src="${img}"><div class="nm">${esc(r.me ? (save.settings.name || '나') + ' (나)' : r.name)}</div>${gains ? `<div class="gain">${r.gain ? '+' + r.gain : ''}</div>` : ''}<div class="st">★${r.stars}</div>`;
+    d.innerHTML = `<div class="rk">${i + 1}</div><img src="${img}"><div class="nm">${esc(r.me ? (save.settings.name ? save.settings.name + ' (나)' : '나') : r.name)}</div>${gains ? `<div class="gain">${r.gain ? '+' + r.gain : ''}</div>` : ''}<div class="st">★${r.stars}</div>`;
     box.appendChild(d);
   }
 }
@@ -415,6 +415,28 @@ actions.back = () => {
   _back();
 };
 window.__app = app;
+// 개발용: 라운드 무대 사진 찍기 (모드 카드 그림). 개발 서버에서만 저장된다.
+app.shots = async () => {
+  const { Session } = await import('./game/session.js');
+  const { questionSet } = await import('./quiz.js');
+  const out = [];
+  for (const id of ['doors', 'tiles', 'balloons', 'tower']) {
+    const mod = await import(`./rounds/${id}.js`);
+    const RC = Object.values(mod)[0];
+    const s = new Session({ RoundClass: RC, questions: questionSet({ doors: 4, tiles: 8, balloons: 6, tower: 4 }[id]), roster: soloRoster(), demo: true });
+    await s.build(); s.start(); session = s;
+    await new Promise(r => setTimeout(r, 1500));
+    for (let i = 0; i < 60 * 12; i++) s.frame(1 / 60, false);
+    s.render(0.016, false);
+    const { renderer: R } = await import('./engine/core.js');
+    s.render(0.016, false);
+    const url = R.domElement.toDataURL('image/jpeg', 0.82);
+    const blob = await (await fetch(url)).blob();
+    await fetch('/__save?name=round_' + id + '.jpg', { method: 'PUT', body: blob });
+    out.push(id); s.dispose(); session = null;
+  }
+  return out;
+};
 // 점검용: 화면이 숨겨져 있어도 시간을 빨리 돌려 본다
 app.step = (sec, ctrl, draw = false) => { for (let i = 0; i < sec * 60; i++) { if (ctrl) ctrl(session); session?.frame(1 / 60, draw || i % 30 === 0); hud.update(1 / 60); } return session && { phase: session.phase, t: +session.t.toFixed(2) }; };
 app.session = () => session;

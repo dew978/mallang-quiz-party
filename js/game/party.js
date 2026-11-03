@@ -17,7 +17,7 @@ export const Q_PER_ROUND = { doors: 4, tiles: 8, balloons: 6, tower: 4 };
 export function roundOrder(mode) {
   if (mode !== 'show') return [mode];
   const a = ['doors', 'tiles', 'balloons'].sort(() => Math.random() - 0.5);
-  return a;   // 결승(tower) 라운드는 아직 만드는 중
+  return [...a, 'tower'];
 }
 
 // 혼자 할 때 참가자: 나 + 봇 11명 (캐릭터·모자 고루)
