@@ -176,8 +176,10 @@ export class TowerRound {
     }
     if (this.playT > 180) this.end('시간 끝!');
   }
+  onNet(m) { if (m.k === 'crown' && !this.crownBy) { const p = this.s.players.find(x => x.pid === m.pp); if (p) this.takeCrown(p); } }
   takeCrown(p) {
     const s = this.s;
+    if (!p.remote) s.opts.net?.event('crown', { pp: p.pid });
     this.crownBy = p.me ? 'me' : p.pid; this.crownPlayer = p;
     if (!p.finished) { p.finished = true; this.order.unshift(p); }
     this.order.forEach((x, i) => x.place = i + 1);

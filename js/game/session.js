@@ -98,7 +98,7 @@ export class Session {
         const rx = -f.z, rz = f.x;
         c = { mx: (f.x * m.y + rx * m.x), mz: (f.z * m.y + rz * m.x), jump: e.jump && playing, jumpHeld: input.jumpHeld, dive: e.dive && playing };
         if (!playing && ph !== 'end') { c.mx = c.mz = 0; }
-      } else if (p.bot && playing && this.isHost) c = this.round.botCtrl(p, dt) || null;
+      } else if (p.bot && playing && (this.isHost || p.me)) c = this.round.botCtrl(p, dt) || null;
       stepBody(b, c || undefined, dt, this.world);
       this.soundFor(p);
       // 떨어짐
@@ -108,6 +108,7 @@ export class Session {
     for (const h of this.world.hazards) h.update?.(dt, this.t);
     for (const h of this.world.hazards) for (const p of this.players) if (!p.remote && p.body.state !== 'fallen' && p.body.state !== 'frozen') h.test?.(p, dt);
     collideBodies(this.players.map(p => p.body));
+    this.opts.net?.tick?.(this, dt);
   }
   soundFor(p) {
     const b = p.body, near = p.me ? 1 : this.hearing(p);
@@ -165,8 +166,11 @@ export class Session {
     if (!ok && !this.wrongs.some(w => w.q === q.q)) this.wrongs.push({ ...q, pick: pickIdx });
   }
   // 모두 끝 (라운드가 부른다)
-  endRound(text = '끝!') {
+  endRound(text = '끝!', fromNet = false) {
     if (this.phase === 'end') return;
+    // 친구와 할 때는 방장이 끝을 정한다
+    if (this.opts.net && !this.isHost && !fromNet) return;
+    if (this.opts.net && this.isHost) this.opts.net.endRound(text);
     this.phase = 'end'; this.phaseT = 0; input.enabled = false;
     hud.hideQuestion(); hud.banner(text, 'end'); audio.play('round_end');
     for (const p of this.players) if (p.body.state === 'normal') p.body.vx = p.body.vz = 0;
@@ -181,7 +185,19 @@ export class Session {
   // ---- 그리기 ----
   render(dt, paused) {
     const t = this.t;
-    for (const p of this.players) p.view.update(p.body, paused ? 0 : dt, t);
+    for (const p of this.players) {
+      // 친구 몸은 받은 위치를 부드럽게 따라간다
+      if (p.remote && p.net && !paused) {
+        const b = p.body, n = p.net, k = Math.min(1, dt * 14);
+        if (Math.hypot(n.x - b.x, n.z - b.z) > 6) { b.x = n.x; b.y = n.y; b.z = n.z; }
+        b.x += (n.x - b.x) * k; b.y += (n.y - b.y) * k; b.z += (n.z - b.z) * k;
+        let dy = n.yaw - b.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); b.yaw += dy * k;
+        b.vx = n.vx; b.vy = n.vy; b.vz = n.vz; b.state = n.st; b.grounded = n.g; b.groundY = n.g ? b.y : b.groundY;
+        if (b.grounded) b.stepPhase += Math.hypot(b.vx, b.vz) * dt * 1.45;
+        p.view.setVisible(n.st !== 'fallen');
+      }
+      p.view.update(p.body, paused ? 0 : dt, t);
+    }
     if (!paused) { updateFx(dt); this.round.visual?.(dt, t); }
     this.updateCamera(dt);
     renderer.render(this.scene, camera);

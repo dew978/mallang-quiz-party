@@ -55,8 +55,10 @@ export class Party {
     s.roundNum = this.idx + 1; s.roundCount = this.order.length;
     for (const p of s.players) p.stars = this.totals[p.pid] || 0;
     this.session = s;
+    this.net?.attach(s);
     this.ui.setLoading?.(true);
     await s.build();
+    if (this.net) await this.net.waitBegin();
     s.round.info.num = this.order.length > 1 ? (id === 'tower' && this.order.length > 1 ? '결승 라운드' : `${this.idx + 1}라운드`) : '연습';
     this.ui.setLoading?.(false);
     this.ui.enterGame?.(s);

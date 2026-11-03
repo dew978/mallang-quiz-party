@@ -76,6 +76,7 @@ export class BalloonsRound {
   respawnSpot() { return { x: rand(-6, 6), y: 6, z: rand(-4, 4) }; }
   // 풍선 띄우기: 보기마다 3~4개, 그중 둘은 낮게
   spawnBalloons(q) {
+    const rng = seeded(Math.floor((this.s.opts.net?.seed ?? Math.random() * 1e9) + this.qi * 7919)), rnd = (a, b) => a + rng() * (b - a);
     for (const b of this.balloons) this.removeBalloon(b);
     this.balloons = [];
     const n = q.c.length, per = n === 3 ? 4 : 3;
@@ -86,15 +87,15 @@ export class BalloonsRound {
         let x, z, y, tries = 0;
         const high = k === per - 1;     // 하나는 높이 (트램펄린 근처)
         do {
-          if (high) { const pd = this.pads[Math.floor(Math.random() * 4)]; x = pd.x + rand(-1.8, 1.8); z = pd.z + rand(-1.8, 1.8); y = rand(4.2, 5.4); }
-          else { x = rand(-AX + 2, AX - 2); z = rand(-AZ + 2, AZ - 2); y = rand(1.7, 2.5); const onBlock = this.blocks.find(bk => Math.abs(bk.x - x) < 1.8 && Math.abs(bk.z - z) < 1.8); if (onBlock) y += 1.1; }
+          if (high) { const pd = this.pads[Math.floor(rng() * 4)]; x = pd.x + rnd(-1.8, 1.8); z = pd.z + rnd(-1.8, 1.8); y = rnd(4.2, 5.4); }
+          else { x = rnd(-AX + 2, AX - 2); z = rnd(-AZ + 2, AZ - 2); y = rnd(1.7, 2.5); const onBlock = this.blocks.find(bk => Math.abs(bk.x - x) < 1.8 && Math.abs(bk.z - z) < 1.8); if (onBlock) y += 1.1; }
         } while (!free(x, z) && ++tries < 30);
         spots.push({ x, z });
-        this.balloons.push(this.makeBalloon(i, q.c[i], x, y, z));
+        this.balloons.push(this.makeBalloon(i, q.c[i], x, y, z, rng));
       }
     }
   }
-  makeBalloon(i, text, x, y, z) {
+  makeBalloon(i, text, x, y, z, rng = Math.random) {
     const st = ANSWER_STYLE[i];
     const g = new THREE.Group(); g.position.set(x, y, z);
     const m = new THREE.Mesh(balloonGeo, mat(st.hex, { rough: 0.18 })); m.scale.set(1, 1.15, 1); m.castShadow = !low(); g.add(m);
@@ -105,7 +106,7 @@ export class BalloonsRound {
     const lab = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
     lab.scale.set(2.3, 0.99, 1); lab.position.y = 1.35; lab.renderOrder = 6; g.add(lab);
     this.root.add(g);
-    return { i, g, lab, x, y, z, baseY: y, ph: Math.random() * 6, alive: true, vx: rand(-0.25, 0.25), vz: rand(-0.25, 0.25) };
+    return { i, g, lab, x, y, z, baseY: y, ph: rng() * 6, alive: true, vx: (rng() - 0.5) * 0.5, vz: (rng() - 0.5) * 0.5 };
   }
   removeBalloon(b) { this.root.remove(b.g); b.lab.material.map.dispose(); b.lab.material.dispose(); b.alive = false; }
   popBalloon(b, color) {
@@ -156,6 +157,7 @@ export class BalloonsRound {
   pop(p, b, q) {
     const s = this.s, ok = b.i === q.a;
     p.picked = b.i;
+    if (!p.remote) this.s.opts.net?.event('pop', { qi: this.qi, bi: this.balloons.indexOf(b), pp: p.pid });
     this.popBalloon(b, ANSWER_STYLE[b.i].hex);
     s.answer(p, q, ok, b.i);
     const me = p.me, near = me ? 1 : s.hearing(p);
@@ -170,6 +172,16 @@ export class BalloonsRound {
       fx.ink({ x: b.x, y: b.y, z: b.z });
       if (me) { audio.play('ink'); audio.play('wrong', { vol: 0.6 }); hud.ink(true); setTimeout(() => hud.ink(false), 1300); shake.add(0.25); hud.mark(b.i, false); hud.popAt(p.body, '먹물 펑!', 'bad'); }
     }
+  }
+  // 친구 기기에서 터진 풍선
+  onNet(m) {
+    if (m.k !== 'pop' || m.qi !== this.qi || this.state !== 'ask') return;
+    const b = this.balloons[m.bi], p = this.s.players.find(x => x.pid === m.pp);
+    if (p) p.picked = b ? b.i : -1;
+    if (!b || !b.alive) return;
+    if (b.i === this.qs[this.qi].a) this.okCount++;
+    this.popBalloon(b, ANSWER_STYLE[b.i].hex);
+    if (this.s.hearing(p) > 0.05) audio.play('balloon_pop', { vol: this.s.hearing(p) });
   }
   close(q) {
     const s = this.s;
@@ -250,3 +262,6 @@ export class BalloonsRound {
   }
   dispose() { for (const b of this.balloons) this.removeBalloon(b); this.s.scene.remove(this.root); }
 }
+
+// 같은 씨앗이면 모든 기기에서 같은 수열 (풍선 자리 맞추기)
+function seeded(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }

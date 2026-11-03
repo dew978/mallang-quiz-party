@@ -38,6 +38,8 @@ async function boot() {
   step(1, '');
   requestAnimationFrame(loop);
   if (params.get('play')) { quickPlay(params.get('play')); return; }
+  // 초대 링크(?room=코드)로 오면 바로 그 방으로
+  if (params.get('room')) { const code = params.get('room').toUpperCase(); history.replaceState(null, '', location.pathname); import('./net/lobby.js').then(x => x.openLobby(app, code)); return; }
   go('title', { reset: true });
 }
 async function loadTitleArt() {
@@ -125,8 +127,8 @@ const actions = {
   pauseSettings() { $('pause').hidden = true; go('settings'); $('scr-settings').classList.add('over'); },
   quitGame() { $('pause').hidden = true; audio.duck(false); quitToMenu(); },
   boardGo() { boardGoFn?.(); },
-  resAgain() { if (lastSetup) startParty(lastSetup); },
-  resHome() { go('menu', { reset: true }); },
+  resAgain() { if (party?.net) { const p = party; party = null; import('./net/lobby.js').then(x => x.backToRoom(app)); return; } if (lastSetup) startParty(lastSetup); },
+  resHome() { if (party?.net) { import('./net/lobby.js').then(x => x.leaveRoom()); party = null; } go('menu', { reset: true }); },
 };
 
 // ---------- 화면별 ----------
@@ -357,8 +359,8 @@ const partyUI = {
     const b = $('boardGo');
     const tick = () => { b.textContent = `다음 라운드 (${left})`; if (left-- <= 0) boardGoFn(); };
     clearInterval(boardTimer); boardTimer = setInterval(tick, 1000); tick();
-    boardGoFn = () => { clearInterval(boardTimer); boardGoFn = null; goNext(); };
-    if (party?.net && !party.net.isHost) { b.style.display = 'none'; clearInterval(boardTimer); boardGoFn = null; } else b.style.display = '';
+    boardGoFn = () => { clearInterval(boardTimer); boardGoFn = null; party?.net?.next(); goNext(); };
+    if (party?.net && !party.net.isHost) { b.style.display = 'none'; clearInterval(boardTimer); boardGoFn = null; party.net.waitNext(goNext); $('boardNext').textContent += ' · 방장을 기다리는 중'; } else b.style.display = '';
     audio.playBgm('menu');
   },
   async showResult(r) {
