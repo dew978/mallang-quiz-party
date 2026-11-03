@@ -1,0 +1,8 @@
+{
+ "mochi":  {"body": "#f8f7f4", "accent": "#f4a6b8"},
+ "bori":   {"body": "#9a6c58", "accent": "#6d4333"},
+ "ppiyak": {"body": "#f9eeb8", "accent": "#f8964a"},
+ "cheese": {"body": "#fbac6c", "accent": "#c66144"},
+ "dino":   {"body": "#cfecdf", "accent": "#8fc7ad"},
+ "pangi":  {"body": "#f2f1f0", "accent": "#2b2b2e"}
+}

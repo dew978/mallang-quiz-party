@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#ff8fbf">
+<title>말랑 퀴즈 파티</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&family=Lilita+One&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎈</text></svg>">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="bgDeco"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<div id="inkLayer"><i></i><i></i><i></i></div>
+<div id="wipe"><i></i><i></i><i></i></div>
+
+<div id="ui">
+  <!-- 로딩 -->
+  <section class="screen active" id="scr-loading">
+    <div class="loading"><div class="logo small"><span class="l1">말랑</span><span class="l2">퀴즈파티</span></div><div class="bar"><i id="loadBar"></i></div><p id="loadText">불러오는 중...</p></div>
+  </section>
+
+  <!-- 타이틀 -->
+  <section class="screen" id="scr-title">
+    <div class="title-bg" id="titleBg"></div>
+    <div class="title-confetti" id="titleConfetti"></div>
+    <div class="title-wrap">
+      <div class="logo" id="logo"><span class="l1">말랑</span><span class="l2"><b>퀴</b><b>즈</b><b>파</b><b>티</b></span></div>
+      <div class="title-btns">
+        <button class="btn big pink" data-act="start">시작하기</button>
+        <button class="btn big blue" data-act="option">설정</button>
+      </div>
+    </div>
+    <div class="credit">삼대710 제작</div>
+  </section>
+
+  <!-- 학년 / 학기 / 과목 -->
+  <section class="screen" id="scr-grade">
+    <h1 class="head">몇 학년이에요?</h1>
+    <div class="steps"><b class="on">학년</b><b>학기</b><b>과목</b></div>
+    <div class="choice-grid g6" id="gradeGrid"></div>
+    <button class="btn small back" data-act="back">← 뒤로</button>
+  </section>
+  <section class="screen" id="scr-semester">
+    <h1 class="head">몇 학기를 복습할까요?</h1>
+    <div class="steps"><b class="done">학년</b><b class="on">학기</b><b>과목</b></div>
+    <div class="choice-grid g2" id="semGrid"></div>
+    <button class="btn small back" data-act="back">← 뒤로</button>
+  </section>
+  <section class="screen" id="scr-subject">
+    <h1 class="head">어떤 과목을 복습할까요?</h1>
+    <div class="steps"><b class="done">학년</b><b class="done">학기</b><b class="on">과목</b></div>
+    <div class="choice-grid g5" id="subjGrid"></div>
+    <button class="btn small back" data-act="back">← 뒤로</button>
+  </section>
+
+  <!-- 메인 메뉴 -->
+  <section class="screen" id="scr-menu">
+    <div class="topbar">
+      <button class="chip subj" data-act="changeSubject" id="menuInfo"></button>
+      <div class="row"><div class="coins" id="menuCoins"></div><button class="btn small icon" data-act="settings" title="설정">⚙️</button></div>
+    </div>
+    <h1 class="head">무엇을 할까요?</h1>
+    <div class="menu-grid">
+      <button class="tile t1" data-act="single"><span class="ic" data-icon="icon_party">🎉</span><b>혼자 파티</b><em>말랑이 11명과 퀴즈 파티</em></button>
+      <button class="tile t2" data-act="multi"><span class="ic" data-icon="icon_friends">👫</span><b>친구와 파티</b><em>방 코드로 최대 8명</em></button>
+      <button class="tile t3" data-act="shop"><span class="ic" data-icon="icon_shop">🛍️</span><b>꾸미기 상점</b><em>캐릭터 · 모자 · 발자국</em></button>
+      <button class="tile t4" data-act="record"><span class="ic" data-icon="icon_record">📒</span><b>공부 기록</b><em>정답률 · 오답 노트</em></button>
+    </div>
+  </section>
+
+  <!-- 고르기 (모드 / 캐릭터) 커버플로우 -->
+  <section class="screen" id="scr-pick">
+    <div class="topbar"><button class="btn small" data-act="back">← 뒤로</button><h2 id="pickTitle">무엇을 할까요?</h2><div class="coins" id="pickCoins"></div></div>
+    <div class="cover" id="pickCover"></div>
+    <div class="pick-info" id="pickInfo"></div>
+    <div class="pick-actions"><div class="seg" id="botSel"></div><button class="btn big pink" id="pickGo">선택!</button></div>
+  </section>
+
+  <!-- 상점 -->
+  <section class="screen" id="scr-shop">
+    <div class="topbar"><button class="btn small" data-act="back">← 메뉴</button><h2>꾸미기 상점</h2><div class="coins" id="shopCoins"></div></div>
+    <div class="tabs" id="shopTabs"><button data-tab="char" class="on">🐰 캐릭터</button><button data-tab="hat">🎩 모자</button><button data-tab="trail">✨ 발자국</button></div>
+    <div class="cover" id="shopCover"></div>
+    <div class="shop-panel" id="shopPanel"></div>
+  </section>
+
+  <!-- 설정 -->
+  <section class="screen" id="scr-settings">
+    <div class="topbar"><button class="btn small" data-act="back">← 뒤로</button><h2>설정</h2><div></div></div>
+    <div class="settings" id="settingsBox">
+      <div class="set-row"><span>배경음악</span><input type="range" min="0" max="1" step="0.05" id="setBgm"></div>
+      <div class="set-row"><span>효과음</span><input type="range" min="0" max="1" step="0.05" id="setSfx"></div>
+      <div class="set-row"><span>문제 읽어 주기</span><div class="seg" id="setTts"></div></div>
+      <div class="set-row"><span>문제 시간</span><div class="seg" id="setTimer"></div></div>
+      <div class="set-row"><span>말랑이 봇 실력</span><div class="seg" id="setBots"></div></div>
+      <div class="set-row"><span>그래픽</span><div class="seg" id="setQuality"></div></div>
+      <div class="set-row"><span>화면 흔들림</span><div class="seg" id="setShake"></div></div>
+      <div class="set-row"><span>내 이름</span><input type="text" maxlength="8" id="setName" placeholder="나"></div>
+      <div class="set-row btns"><button class="btn blue" data-act="changeSubject">학년·과목 바꾸기</button><button class="btn" data-act="resetSave">기록 지우기</button></div>
+      <div class="help"><b>조작</b> 이동 WASD·방향키 / 점프 Space / 다이브 Shift·E / 멈춤 Esc &nbsp;·&nbsp; 태블릿: 왼쪽을 눌러 끌면 이동, 오른쪽 단추로 점프·다이브</div>
+    </div>
+  </section>
+
+  <!-- 공부 기록 -->
+  <section class="screen" id="scr-record">
+    <div class="topbar"><button class="btn small" data-act="back">← 뒤로</button><h2>📒 공부 기록</h2><div class="chip" id="recInfo"></div></div>
+    <div class="record">
+      <div class="rec-left"><div class="rec-ring" id="recRing"></div><div class="rec-table" id="recTable"></div></div>
+      <div class="rec-right"><h3>오답 노트 <small id="recCount"></small></h3><p class="rec-tip">두 번 연속 맞히면 노트에서 졸업해요. 파티 문제에도 다시 나와요!</p><div id="recNotes" class="rec-notes"></div></div>
+    </div>
+  </section>
+
+  <!-- 멀티 로비 -->
+  <section class="screen" id="scr-lobby">
+    <div class="topbar"><button class="btn small" data-act="back">← 메뉴</button><h2>친구와 파티</h2><div class="chip" id="netStatus"></div></div>
+    <div class="lobby" id="lobbyJoin">
+      <div class="card-box">
+        <h3>방 만들기</h3>
+        <p>방 코드·초대 링크·QR로 친구를 불러요 (최대 8명)<br>방장의 학년·과목 문제로 함께 풀어요</p>
+        <button class="btn big pink" data-act="createRoom">새 방 만들기</button>
+      </div>
+      <div class="card-box">
+        <h3>코드로 들어가기</h3>
+        <input id="joinCode" maxlength="5" placeholder="ABCDE" autocomplete="off">
+        <button class="btn big blue" data-act="joinRoom">들어가기</button>
+        <p>친구가 보낸 초대 링크를 열거나 QR을 찍어도 돼요</p>
+      </div>
+    </div>
+    <div class="lobby room" id="lobbyRoom" hidden>
+      <div class="room-left">
+        <div class="room-code">방 코드 <b id="roomCode">-----</b></div>
+        <div id="roomQr"></div>
+        <button class="btn small blue" data-act="copyLink">🔗 초대 링크 복사</button>
+        <div class="room-subj" id="roomSubj"></div>
+      </div>
+      <div class="room-right">
+        <div class="slots" id="roomSlots"></div>
+        <div class="room-ctrl">
+          <button class="btn" data-act="roomChar">🐰 캐릭터 바꾸기</button>
+          <div class="seg hostonly" id="roomMode"></div>
+          <label class="hostonly chk"><input type="checkbox" id="roomBots" checked> 빈자리 봇</label>
+          <button class="btn big pink hostonly" data-act="roomStart">모두 출발!</button>
+          <div class="guestonly wait" id="roomWait">방장이 출발하기를 기다리는 중...</div>
+          <button class="btn small" data-act="roomLeave">나가기</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 라운드 사이 별판 -->
+  <section class="screen" id="scr-board">
+    <h1 class="head" id="boardTitle">중간 순위</h1>
+    <div class="board" id="boardList"></div>
+    <div class="board-next" id="boardNext"></div>
+    <div class="row center"><button class="btn big pink" id="boardGo" data-act="boardGo">다음 라운드</button></div>
+  </section>
+
+  <!-- 결과 -->
+  <section class="screen" id="scr-result">
+    <div class="res-top"><h1 class="head" id="resTitle">파티 끝!</h1></div>
+    <div class="res-body">
+      <div class="res-left"><div class="res-list" id="resList"></div></div>
+      <div class="res-right"><div class="res-reward" id="resReward"></div><div class="res-notes" id="resNotes"></div></div>
+    </div>
+    <div class="row center res-btns"><button class="btn big pink" data-act="resAgain">다시 하기</button><button class="btn big blue" data-act="resHome">처음으로</button></div>
+  </section>
+
+  <!-- 경기 HUD -->
+  <div id="hud">
+    <div class="hud-tl">
+      <button class="hbtn" data-act="pause" title="멈춤">⏸</button>
+      <div class="hud-round" id="hudRound"></div>
+      <div class="hud-prog" id="hudProg"></div>
+    </div>
+    <div class="hud-tr"><div class="hud-place" id="hudPlace"></div><div class="hud-stars" id="hudStars">★ <b>0</b></div></div>
+    <div id="hudQ" class="hq">
+      <div class="qlabel">문제</div>
+      <div class="qtext" id="hudQText"></div>
+      <div class="qchoices" id="hudQChoices"></div>
+      <div class="qtimer"><i id="hudQBar"></i></div><div class="qsec" id="hudQTime"></div>
+    </div>
+    <div id="hudReveal" class="reveal"></div>
+    <div id="roundCard" class="round-card"></div>
+    <div id="hudCount" class="count"></div>
+    <div id="hudBanner" class="banner"></div>
+    <div id="hudToast" class="toast"></div>
+    <div id="hudHint" class="hint"></div>
+    <div id="hudPops"></div>
+    <div id="touch">
+      <div id="joyZone"><div id="joyBase"><div id="joyKnob"></div></div><div class="joy-tip">여기를 눌러 끌면 이동</div></div>
+      <button id="btnDive" class="tbtn dive">다이브</button>
+      <button id="btnJump" class="tbtn jump">점프</button>
+    </div>
+  </div>
+
+  <div id="pause" class="modal" hidden><div class="modal-box"><h2>잠깐 멈춤</h2><button class="btn big blue" data-act="resume">계속하기</button><button class="btn big" data-act="pauseSettings">설정</button><button class="btn big pink" data-act="quitGame">처음으로</button></div></div>
+
+  <!-- 문제 모달 (구매할 때) -->
+  <div id="quiz" class="modal" hidden>
+    <div class="modal-box quiz-box">
+      <div class="quiz-tag" id="quizTag">복습 문제</div>
+      <h2 id="quizQ"></h2>
+      <div class="quiz-choices" id="quizC"></div>
+      <div class="quiz-exp" id="quizE"></div>
+      <div class="row center" id="quizBtns"></div>
+    </div>
+  </div>
+  <div id="confirm" class="modal" hidden><div class="modal-box"><h2 id="confirmText"></h2><div class="row center"><button class="btn big pink" id="confirmYes">네</button><button class="btn big" id="confirmNo">아니요</button></div></div></div>
+  <div id="toast"></div>
+</div>
+
+<button id="fsBtn" title="전체화면">⛶</button>
+<div id="rotate">📱↻ 태블릿을 가로로 돌려 주세요</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
