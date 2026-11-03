@@ -52,6 +52,7 @@ export class Session {
     hud.show(true);
     hud.setRound(this.round.info);
     hud.setStars(this.me?.stars || 0);
+    hud.place(''); hud.progress(''); hud.hideQuestion(); hud.hideReveal();
     audio.playBgm(this.round.info.bgm);
     this.introLen = this.round.intro ? this.round.intro.length : 3;
     hud.roundCard(this.round.info, this.introLen);

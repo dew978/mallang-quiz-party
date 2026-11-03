@@ -63,7 +63,7 @@ export const hud = {
   count(text, cls = '') { const e = E().count; e.textContent = text; e.className = 'count on ' + cls; void e.offsetWidth; countT = cls === 'go' ? 0.9 : 0.8; },
   banner(text, cls = '', dur = 1.8) { const e = E().banner; e.innerHTML = text; e.className = 'banner on ' + cls; bannerT = dur; },
   toast(text, dur = 1.6) { const e = E().toast; e.textContent = text; e.classList.add('on'); toastT = dur; },
-  hint(text, dur = 4) { const e = E().hint; e.innerHTML = text; e.classList.add('on'); hintT = dur; },
+  hint(text, dur = 4) { const e = E().hint; e.innerHTML = document.body.classList.contains('touch') ? text.replace(/(Space)/g, '단추') : text; e.classList.add('on'); hintT = dur; },
   ink(on) { E().ink.classList.toggle('on', on); },
   // 머리 위로 떠오르는 글자
   popAt(b, text, cls = '') {

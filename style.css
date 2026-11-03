@@ -372,3 +372,18 @@ body.touch #touch { display: block; }
 .room-ctrl .seg button { font-size: 15px; padding: 7px 10px 8px; white-space: nowrap; }
 #roomQr { width: 170px; height: 170px; background: #fff; border-radius: 12px; }
 #roomQr svg { width: 100%; height: 100%; }
+#scr-shop .cover { height: 50vh; margin: 8px 0; }
+#scr-shop .cv-card { width: min(250px, 23vw); }
+#scr-pick .cover { margin-top: 10px; }
+.podium { display: flex; align-items: flex-end; justify-content: center; gap: 10px; padding: 6px 0 4px; flex: none; }
+.pd { display: flex; flex-direction: column; align-items: center; width: 30%; animation: tileIn .6s cubic-bezier(.2,1.4,.4,1) backwards; }
+.pd img { width: 78%; margin-bottom: -10px; position: relative; z-index: 1; filter: drop-shadow(0 6px 6px rgba(60,30,90,.25)); }
+.pd b { font-weight: normal; font-size: 17px; background: #fff; padding: 2px 10px; border-radius: 10px; position: relative; z-index: 2; margin-bottom: 4px; }
+.pd .step { width: 100%; border-radius: 16px 16px 6px 6px; font-family: var(--num); font-size: 34px; color: #fff; text-align: center; box-shadow: 0 5px 0 rgba(0,0,0,.15); }
+.pd.p1 .step { height: 74px; background: linear-gradient(#ffd84d, #f2a900); } .pd.p2 .step { height: 54px; background: linear-gradient(#cfd8ea, #98a5c2); } .pd.p3 .step { height: 40px; background: linear-gradient(#ffc08a, #d9813f); }
+.pd.p1 { animation-delay: .25s; } .pd.p3 { animation-delay: .12s; }
+.pd.me b { background: #fff2a8; }
+/* 왼쪽 위: 멈춤 단추 아래로 라운드 이름·진행을 세로로 (가운데 문제 카드와 겹치지 않게) */
+.hud-tl { flex-direction: column; align-items: flex-start; gap: 8px; }
+.hud-round, .hud-prog { font-size: 16px; padding: 6px 12px 8px; max-width: calc(50vw - min(350px, 28vw) - 30px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.touch .hint { bottom: 26%; }

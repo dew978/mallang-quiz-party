@@ -367,7 +367,16 @@ const partyUI = {
     go('result', { reset: true });
     document.body.classList.remove('ingame');
     $('resTitle').innerHTML = r.single ? '연습 끝!' : r.myRank === 1 ? '🏆 우승! 축하해요!' : `파티 끝! 나는 <span style="color:#ffd23f">${r.myRank}등</span>`;
-    showRows($('resList'), r.rows, false);
+    // 시상대 (1~3등, 기뻐하는 모습)
+    const pod = document.createElement('div'); pod.className = 'podium';
+    const top3 = [r.rows[1], r.rows[0], r.rows[2]];
+    for (const [k, row] of top3.entries()) {
+      if (!row) continue;
+      const place = [2, 1, 3][k], img = await portrait(row.charId, row.hat || 'none', 'cheer');
+      pod.insertAdjacentHTML('beforeend', `<div class="pd p${place}${row.me ? ' me' : ''}"><img src="${img}"><b>${esc(row.me ? '나' : row.name)}</b><div class="step">${place}</div></div>`);
+    }
+    await showRows($('resList'), r.rows, false);
+    $('resList').prepend(pod);
     const pct = Math.round(r.correct / Math.max(1, r.answered) * 100);
     $('resReward').innerHTML = `<div>맞힌 문제 <b>${r.correct}/${r.answered}</b></div><div>정답률 <b>${pct}%</b></div><div>모은 별 <b>★${r.myStars}</b></div><div>받은 코인 <b>+${r.reward}</b></div>` + (r.crown ? '<div>👑 왕관 보너스!</div>' : '');
     const n = $('resNotes');
