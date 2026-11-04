@@ -27,7 +27,7 @@ function fitLines(x, text, maxW, maxLines, size, font) {
 }
 
 // 판 텍스처: bg 배경색(없으면 투명), shape 모양 표시, 테두리
-export function labelTexture(text, { w = 512, h = 256, bg = null, fg = '#ffffff', stroke = 'rgba(40,20,60,0.85)', shape = '', shapeColor = '#fff', font = 'Jua, sans-serif', size = 120, radius = 40, border = null } = {}) {
+export function labelTexture(text, { w = 512, h = 256, bg = null, fg = '#ffffff', stroke = 'rgba(40,20,60,0.85)', shape = '', shapeColor = '#fff', font = '"Black Han Sans", sans-serif', size = 120, radius = 40, border = null } = {}) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const x = c.getContext('2d');
   if (bg) {

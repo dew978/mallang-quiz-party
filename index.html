@@ -5,12 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#ff8fbf">
+<meta name="theme-color" content="#141a44">
 <title>말랑 퀴즈 파티</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&family=Lilita+One&display=swap" rel="stylesheet">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎈</text></svg>">
+<link rel="preload" href="vendor/fonts/BlackHanSans-korean.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="vendor/fonts/Pretendard-ExtraBold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎨</text></svg>">
 <link rel="stylesheet" href="style.css">
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
 </head>
@@ -67,11 +66,18 @@
       <div class="row"><div class="coins" id="menuCoins"></div><button class="btn small icon" data-act="settings" title="설정">⚙️</button></div>
     </div>
     <h1 class="head">무엇을 할까요?</h1>
-    <div class="menu-grid">
-      <button class="tile t1" data-act="single"><span class="ic" data-icon="icon_party">🎉</span><b>혼자 파티</b><em>친구 11명과 퀴즈 파티</em></button>
-      <button class="tile t2" data-act="multi"><span class="ic" data-icon="icon_friends">👫</span><b>친구와 파티</b><em>방 코드로 최대 8명</em></button>
-      <button class="tile t3" data-act="shop"><span class="ic" data-icon="icon_shop">🛍️</span><b>꾸미기 상점</b><em>캐릭터 · 모자 · 발자국</em></button>
-      <button class="tile t4" data-act="record"><span class="ic" data-icon="icon_record">📒</span><b>공부 기록</b><em>정답률 · 오답 노트</em></button>
+    <div class="menu-body">
+      <div class="hero">
+        <div class="hero-stage"><div class="hero-ring"></div><canvas id="heroCanvas"></canvas></div>
+        <div class="hero-name" id="heroName"></div>
+        <button class="btn small" data-act="shop">🧑‍🚀 캐릭터 바꾸기</button>
+      </div>
+      <div class="menu-grid">
+        <button class="tile t1" data-act="single"><span class="no">작전 01</span><span class="ic" data-icon="icon_party">🎉</span><b>혼자 파티</b><em>친구 11명과 퀴즈 파티</em></button>
+        <button class="tile t2" data-act="multi"><span class="no">작전 02</span><span class="ic" data-icon="icon_friends">👫</span><b>친구와 파티</b><em>방 코드로 최대 8명</em></button>
+        <button class="tile t3" data-act="shop"><span class="no">작전 03</span><span class="ic" data-icon="icon_shop">🛍️</span><b>꾸미기 상점</b><em>캐릭터 · 모자 · 발자국</em></button>
+        <button class="tile t4" data-act="record"><span class="no">작전 04</span><span class="ic" data-icon="icon_record">📒</span><b>공부 기록</b><em>정답률 · 오답 노트</em></button>
+      </div>
     </div>
   </section>
 

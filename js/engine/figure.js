@@ -47,7 +47,7 @@ const shadowGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
 function nameSprite(text, me = false) {
   const c = document.createElement('canvas'); c.width = 256; c.height = 72;
   const x = c.getContext('2d');
-  x.font = '700 40px Jua, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.font = '40px "Black Han Sans", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
   const w = Math.min(240, x.measureText(text).width + 34);
   x.fillStyle = me ? 'rgba(255,90,140,0.92)' : 'rgba(25,30,70,0.6)';
   roundRect(x, 128 - w / 2, 8, w, 54, 27); x.fill();

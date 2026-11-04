@@ -71,7 +71,7 @@ export class TowerRound {
     const s = this.s, n = q.c.length, y = lvY(k), front = lvFront(k);
     const pw = (W - 1) / n - 0.35, pz = front + 2.4;
     const g = new THREE.Group(); this.root.add(g);
-    const board = labelPlane(q.q, 13, 2, { bg: '#ffffff', fg: '#3a2a5a', stroke: null, border: '#9b7bff', size: 80, font: '"Gowun Dodum", Jua, sans-serif', radius: 46 });
+    const board = labelPlane(q.q, 13, 2, { bg: '#ffffff', fg: '#3a2a5a', stroke: null, border: '#9b7bff', size: 80, font: '"PretendardEB", sans-serif', radius: 46 });
     board.position.set(0, lvY(k + 1) + 4.2, lvBack(k + 1) + 0.2); g.add(board);
     const num = labelPlane(k < 3 ? `${k + 1}층 문제` : '마지막 문제!', 3.2, 0.9, { bg: PAL.butter, fg: '#7a4a00', stroke: null, size: 66, radius: 30 });
     num.position.set(-5.2, lvY(k + 1) + 5.6, lvBack(k + 1) + 0.25); g.add(num);

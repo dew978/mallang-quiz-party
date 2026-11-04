@@ -57,7 +57,7 @@ export class TilesRound {
     if (text !== '') {
       x.fillStyle = hurry ? '#ff5f9e' : '#ffffff'; rr(x, 50, 8, 156, 112, 50); x.fill();
       x.lineWidth = 8; x.strokeStyle = hurry ? '#c9306a' : '#7a4bd8'; rr(x, 54, 12, 148, 104, 46); x.stroke();
-      x.font = '84px "Lilita One", Jua, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.font = '84px "Black Han Sans", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
       x.fillStyle = hurry ? '#ffffff' : '#7a4bd8'; x.fillText(text, 128, 70);
     }
     this.clockT.needsUpdate = true;

@@ -12,6 +12,7 @@ import { CHARACTERS, HATS, TRAILS, ROUNDS, ANSWER_STYLE, charById } from './data
 import { Party, soloRoster } from './game/party.js';
 import { hud, esc } from './game/hud.js';
 import { portrait } from './ui/portrait.js';
+import { showHero, hideHero } from './ui/showcase.js';
 import { cover } from './ui/cover.js';
 
 const $ = id => document.getElementById(id);
@@ -30,7 +31,7 @@ async function boot() {
   initTouch();
   await loadManifest();
   step(0.2, '소리를 불러오는 중...');
-  await Promise.all([audio.init(), loadQuestions()]);
+  await Promise.all([audio.init(), loadQuestions(), document.fonts.load('40px "Black Han Sans"'), document.fonts.load('40px "PretendardEB"'), document.fonts.load('800 20px Pretendard')].map(p => p.catch?.(() => {}) ?? p));
   step(0.55, '대원들을 깨우는 중...');
   await Promise.all([...CHARACTERS.map(c => loadGLB(modelName(c.id, false))), ...CHARACTERS.map(c => loadGLB(modelName(c.id, true))), ...HATS.filter(h => h.id !== 'none').map(h => loadGLB('hat_' + h.id))]);
   step(0.9, '거의 다 됐어요!');
@@ -51,8 +52,8 @@ async function loadTitleArt() {
     const im = new Image(); im.onload = () => { el.textContent = ''; el.appendChild(im); }; im.src = `assets/images/${el.dataset.icon}.png`;
   });
   // 타이틀 색종이
-  const cf = $('titleConfetti'), cols = ['#ff6fa5', '#ffc93c', '#4aa3ff', '#3fd1a6', '#9b7bff'];
-  for (let i = 0; i < (low() ? 14 : 28); i++) {
+  const cf = $('titleConfetti'), cols = ['#ff4f9a', '#ffcf3a', '#2ed8ff', '#3fe08a', '#a46bff'];
+  for (let i = 0; i < (low() ? 10 : 20); i++) {
     const c = document.createElement('i');
     c.style.left = Math.random() * 100 + '%'; c.style.background = cols[i % cols.length];
     c.style.animationDuration = (6 + Math.random() * 7) + 's'; c.style.animationDelay = (-Math.random() * 12) + 's';
@@ -76,6 +77,7 @@ function go(id, { back = false, reset = false, wipe = true } = {}) {
   const doIt = () => {
     document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === 'scr-' + id));
     screen = id;
+    if (id !== 'menu') hideHero();
     onEnter[id]?.();
   };
   if (wipe && screen !== 'loading') { const w = $('wipe'); w.classList.remove('go'); void w.offsetWidth; w.classList.add('go'); audio.play('whoosh', { vol: 0.5 }); setTimeout(doIt, 400); }
@@ -134,30 +136,34 @@ const actions = {
 // ---------- 화면별 ----------
 const onEnter = {
   title() { audio.playBgm('title'); document.body.classList.remove('ingame'); },
+  // 학년: 팔레트 위 물감 방울 6개
   grade() {
     audio.playBgm('menu');
-    const g = $('gradeGrid'); g.innerHTML = '';
+    const g = $('gradeGrid'); g.innerHTML = ''; g.className = 'choice-grid palette';
     for (let i = 1; i <= 6; i++) {
-      const b = document.createElement('button'); b.className = `ctile k${i - 1}`; b.style.animationDelay = (i * 0.04) + 's';
-      b.innerHTML = `${i}학년`; b.onclick = () => { audio.play('click'); save.grade = i; persist(); go('semester'); }; g.appendChild(b);
+      const b = document.createElement('button'); b.className = `blob k${i - 1}`; b.style.animationDelay = (i * 0.05) + 's';
+      b.innerHTML = `<b>${i}</b><small>학년</small>`; b.onclick = () => pickPaint(b, () => { save.grade = i; persist(); go('semester'); }); g.appendChild(b);
     }
   },
+  // 학기: 물감통 2개
   semester() {
-    const g = $('semGrid'); g.innerHTML = '';
+    const g = $('semGrid'); g.innerHTML = ''; g.className = 'choice-grid cans';
     for (let i = 1; i <= 2; i++) {
-      const b = document.createElement('button'); b.className = `ctile sem k${i === 1 ? 3 : 4}`; b.style.animationDelay = (i * 0.05) + 's';
-      b.innerHTML = `${i}학기`; b.onclick = () => { audio.play('click'); save.semester = i; persist(); go('subject'); }; g.appendChild(b);
+      const b = document.createElement('button'); b.className = `can k${i === 1 ? 3 : 4}`; b.style.animationDelay = (i * 0.08) + 's';
+      b.innerHTML = `<span class="body"><b>${i}</b><small>학기</small></span><span class="lid"></span><span class="drip"><i></i><i></i><i></i></span>`;
+      b.onclick = () => pickPaint(b, () => { save.semester = i; persist(); go('subject'); }); g.appendChild(b);
     }
   },
+  // 과목: 대원 배지
   subject() {
     const g = $('subjGrid'); g.innerHTML = '';
     const subs = subjectsFor(save.grade);
-    g.className = 'choice-grid ' + (subs.length === 3 ? 'g3' : 'g5');
+    g.className = 'choice-grid badges ' + (subs.length === 3 ? 'g3' : 'g5');
     const icon = { 국어: '📖', 수학: '🔢', 통합: '🌈', 사회: '🗺️', 과학: '🔬', 영어: '🔤' };
     subs.forEach((s, i) => {
-      const b = document.createElement('button'); b.className = `ctile k${[0, 4, 2, 3, 5][i % 5]}`; b.style.animationDelay = (i * 0.04) + 's';
-      b.innerHTML = `<span style="font-size:.9em">${icon[s] || '⭐'}</span><br>${s}`;
-      b.onclick = () => { audio.play('click'); save.subject = s; save.picked = true; persist(); if (pendingJoin) { const j = pendingJoin; pendingJoin = null; j(); } else go('menu', { reset: true }); };
+      const b = document.createElement('button'); b.className = `badge k${[0, 4, 2, 3, 5][i % 5]}`; b.style.animationDelay = (i * 0.06) + 's';
+      b.innerHTML = `<span class="disc">${icon[s] || '⭐'}</span><b>${s}</b>`;
+      b.onclick = () => pickPaint(b, () => { save.subject = s; save.picked = true; persist(); if (pendingJoin) { const j = pendingJoin; pendingJoin = null; j(); } else go('menu', { reset: true }); });
       g.appendChild(b);
     });
   },
@@ -165,11 +171,21 @@ const onEnter = {
     audio.playBgm('menu'); document.body.classList.remove('ingame');
     $('menuInfo').textContent = `${save.grade}학년 ${save.semester}학기 · ${save.subject}`;
     setCoins($('menuCoins'));
+    const ch = CHARACTERS.find(c => c.id === save.selChar) || CHARACTERS[0];
+    $('heroName').innerHTML = `<small>${ch.animal}</small>${ch.name}`;
+    showHero($('heroCanvas'), save.selChar, save.equip.hat);
   },
   settings() { buildSettings(); },
   record() { buildRecord(); },
   shop() { buildShop(); },
 };
+// 물감 고르기: 누른 곳이 퐁 튀고 잠깐 뒤 넘어간다 (두 번 눌러도 한 번만)
+function pickPaint(b, next) {
+  if (b.parentElement.dataset.busy) return;
+  b.parentElement.dataset.busy = '1'; setTimeout(() => { delete b.parentElement.dataset.busy; }, 900);
+  audio.play('splash', { vol: 0.6 }); b.classList.add('hit');
+  setTimeout(next, 180);
+}
 function setCoins(el, bump) { el.textContent = save.coins.toLocaleString(); if (bump) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); } }
 
 // ---------- 설정 ----------
@@ -209,10 +225,10 @@ function buildRecord() {
     rows.push(`<div><span>${g}-${s} ${sub}</span><b>${Math.round(r.c / Math.max(1, r.c + r.w) * 100)}% <small>(${r.c}/${r.c + r.w})</small></b></div>`);
   }
   const pct = Math.round(c / Math.max(1, c + w) * 100);
-  $('recRing').style.background = `conic-gradient(#3fd1a6 ${pct * 3.6}deg, #f0e8ff 0)`;
-  $('recRing').innerHTML = `<div style="width:110px;height:110px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex-direction:column">${pct}%<small style="font-family:var(--ui);font-size:14px;color:#8a7aa8">전체 정답률</small></div>`;
+  $('recRing').style.background = `conic-gradient(#3fe08a ${pct * 3.6}deg, #2a3578 0)`;
+  $('recRing').innerHTML = `<div style="width:110px;height:110px;border-radius:50%;background:#141a44;color:#fff;display:flex;align-items:center;justify-content:center;flex-direction:column">${pct}%<small style="font-family:var(--read);font-weight:800;font-size:13px;color:#a3aedd">전체 정답률</small></div>`;
   $('recTable').innerHTML = (rows.length ? rows.join('') : '<p class="empty">아직 기록이 없어요. 파티에 참가해 보세요!</p>')
-    + `<div style="margin-top:8px;background:#fff7d6"><span>파티 참가</span><b>${save.stats.parties}번</b></div><div><span>우승</span><b>${save.stats.wins}번</b></div><div><span>왕관</span><b>${save.stats.crowns}개</b></div>`;
+    + `<div style="margin-top:8px;background:rgba(255,207,58,.16)"><span>파티 참가</span><b>${save.stats.parties}번</b></div><div><span>우승</span><b>${save.stats.wins}번</b></div><div><span>왕관</span><b>${save.stats.crowns}개</b></div>`;
   const notes = notesFor(key);
   $('recCount').textContent = `(${notes.length}문제)`;
   const box = $('recNotes'); box.innerHTML = '';
@@ -282,7 +298,7 @@ async function buildShop() {
     const it = items[shopIdx], p = $('shopPanel');
     if (equipped(it.id)) p.innerHTML = `<b>${it.name}</b> 사용 중이에요`;
     else if (owned(it.id)) { p.innerHTML = `<b>${it.name}</b>`; const b = btn('사용하기', 'mint'); b.onclick = act; p.appendChild(b); }
-    else { p.innerHTML = `<b>${it.name}</b> <span class="coins" style="display:inline-flex">${it.price}</span>`; const b = btn('문제 풀고 사기', 'pink'); b.onclick = act; if (save.coins < it.price) { b.disabled = true; p.insertAdjacentHTML('beforeend', '<small style="color:#c07">코인이 모자라요</small>'); } p.appendChild(b); }
+    else { p.innerHTML = `<b>${it.name}</b> <span class="coins" style="display:inline-flex">${it.price}</span>`; const b = btn('문제 풀고 사기', 'pink'); b.onclick = act; if (save.coins < it.price) { b.disabled = true; p.insertAdjacentHTML('beforeend', '<small style="color:#ff4f9a">코인이 모자라요</small>'); } p.appendChild(b); }
   }
   function act() {
     const it = items[shopIdx];

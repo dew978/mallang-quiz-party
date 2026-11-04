@@ -90,7 +90,7 @@ export class DoorsRound {
     lintel.position.set(0, H + (wallH - H) / 2, 0); g.add(lintel);
     s.world.add({ kind: 'box', x: 0, y: H + (wallH - H) / 2, z: gz, hx: HALF, hy: (wallH - H) / 2, hz: T / 2, noSafe: true });
     // 문제 판 (위쪽, 앞에서 보이게)
-    const board = labelPlane(q.q, 13.5, 2.3, { bg: '#ffffff', fg: '#3a2a5a', stroke: null, border: '#ff8fbf', size: 84, font: '"Gowun Dodum", Jua, sans-serif', radius: 50 });
+    const board = labelPlane(q.q, 13.5, 2.3, { bg: '#ffffff', fg: '#3a2a5a', stroke: null, border: '#ff8fbf', size: 84, font: '"PretendardEB", sans-serif', radius: 50 });
     board.position.set(0, wallH + 1.45, 0.05); g.add(board);
     const boardBack = new THREE.Mesh(new RoundedBoxGeometry(14, 2.6, 0.3, 2, 0.3), mat(PAL.hotpink, { rough: 0.35 })); boardBack.position.set(0, wallH + 1.45, -0.2); g.add(boardBack);
     const num = labelPlane(`${gi + 1}/4`, 1.8, 0.9, { bg: PAL.butter, fg: '#7a4a00', stroke: null, size: 70, radius: 30 }); num.position.set(-6.4, wallH + 2.85, 0.1); g.add(num);
