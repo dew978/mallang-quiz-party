@@ -83,6 +83,10 @@ body.ingame #bgDeco { display: none; }
 .title-btns { position: absolute; top: 54%; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: clamp(14px, 2.4vh, 24px); }
 /* 타이틀 버튼: 화면 높이에 맞춰 크게, 글자는 버튼 한가운데 (Jua는 글자가 위로 떠 보여서 위 여백을 조금 더 준다) */
 #scr-title .title-btns .btn { font-size: clamp(30px, 4.6vh, 44px); height: clamp(66px, 10vh, 96px); min-width: clamp(280px, 24vw, 360px); padding: 0.2em 44px 0; line-height: 1; border-radius: 30px; }
+/* 타이틀 로고: 화면 높이에 맞춰 크게, 버튼 묶음 바로 위에 붙인다 (버튼과의 사이 = 화면 높이의 4%) */
+#scr-title .logo { position: absolute; left: 50%; bottom: calc(46% + clamp(16px, 4vh, 40px)); transform: translateX(-50%); }
+#scr-title .logo .l1 { font-size: clamp(44px, min(9vh, 7vw), 92px); -webkit-text-stroke-width: 0.17em; letter-spacing: 0.07em; margin-bottom: 0.1em; }
+#scr-title .logo .l2 b { font-size: clamp(84px, min(18vh, 14vw), 180px); -webkit-text-stroke-width: 0.135em; }
 .credit { position: absolute; right: 22px; bottom: 16px; z-index: 2; font-size: 17px; color: #fff; text-shadow: 0 2px 0 rgba(90,40,120,.6), 0 0 8px rgba(90,40,120,.4); }
 
 /* ---- 제목 / 단계 ---- */
