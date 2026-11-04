@@ -58,6 +58,7 @@ export class TowerRound {
     const ped = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.9, 1.2, 24), mat(PAL.white, { rough: 0.35 })); ped.position.set(0, lvY(tk) + 0.6, tz); root.add(ped);
     w.add({ kind: 'cyl', x: 0, y: lvY(tk) + 0.6, z: tz, r: 1.7, hy: 0.6, noSafe: true });
     this.crown = await prop(root, 'goal_crown', { x: 0, y: lvY(tk) + 1.2, z: tz, size: 1.9 });
+    this.crown.userData.camKeep = true;
     this.crownLight = new THREE.PointLight('#ffe066', 3, 9); this.crownLight.position.set(0, lvY(tk) + 3, tz); root.add(this.crownLight);
     const sign = labelPlane('왕관을 잡아라!', 9, 1.6, { bg: PAL.hotpink, fg: '#ffffff', stroke: '#b01f5a', size: 110, radius: 40 });
     sign.position.set(0, lvY(tk) + 6, lvFront(tk) + 1); root.add(sign);

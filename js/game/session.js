@@ -4,6 +4,7 @@ import { scene as SC, camera, renderer, clock, adaptResolution, low } from '../e
 import { World, makeBody, stepBody, collideBodies, setState, P } from '../engine/physics.js';
 import { Mallang } from '../engine/mallang.js';
 import { initFx, updateFx, fx, shake } from '../engine/fx.js';
+import { CameraOcclusion } from '../engine/occlusion.js';
 import { input, moveVector, consumeEdges, clearInput } from '../engine/input.js';
 import { audio } from '../audio.js';
 import { save } from '../save.js';
@@ -26,6 +27,7 @@ export class Session {
     this.players = opts.roster.map((r, i) => ({ ...r, idx: i, body: makeBody(), stars: 0, coins: 0, finished: false, place: 0, answers: [], bot: (r.bot || (r.me && opts.demo)) ? { t: 0, mem: {} } : null }));
     this.me = this.players.find(p => p.me);
     this.camPos = new THREE.Vector3(); this.camLook = new THREE.Vector3(); this.camInit = false;
+    this.occ = new CameraOcclusion();   // 카메라와 나 사이에 낀 물체는 카메라에만 안 보이게
     this.wrongs = [];      // 내가 틀린 문제
     this.events = [];
   }
@@ -206,9 +208,10 @@ export class Session {
   updateCamera(dt) {
     const r = this.round;
     let look, pos;
-    if (this.phase === 'intro' && r.introCam) { const c = r.introCam(this.phaseT / this.introLen); pos = c.pos; look = c.look; this.camInit = false; }
+    const tgt = this.me ? this.me.body : this.players[0].body;
+    const intro = this.phase === 'intro' && r.introCam;
+    if (intro) { const c = r.introCam(this.phaseT / this.introLen); pos = c.pos; look = c.look; this.camInit = false; }
     else {
-      const tgt = this.me ? this.me.body : this.players[0].body;
       const c = r.camera(tgt);
       pos = c.pos; look = c.look;
     }
@@ -222,9 +225,13 @@ export class Session {
       shake.amt = Math.max(0, shake.amt - dt * 2.2);
     }
     camera.lookAt(this.camLook);
+    // 카메라는 충돌 없이 그냥 따라가고, 그 사이에 낀 벽·판·기둥은 카메라에만 안 보이게 (충돌·그림자는 그대로)
+    camera.updateMatrixWorld();
+    this.occ.update(dt, r.root, camera, tgt, !intro);
     r.lights?.userData.follow?.(this.me ? new THREE.Vector3(this.me.body.x, 0, this.me.body.z) : this.camLook);
   }
   dispose() {
+    this.occ.reset();
     this.round?.dispose?.();
     for (const p of this.players) p.view?.removeFrom(this.scene);
     hud.show(false);

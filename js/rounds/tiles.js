@@ -40,7 +40,7 @@ export class TilesRound {
     this.clockC = document.createElement('canvas'); this.clockC.width = 256; this.clockC.height = 128;
     this.clockT = new THREE.CanvasTexture(this.clockC); this.clockT.colorSpace = THREE.SRGBColorSpace;
     const clock = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.clockT, transparent: true, depthWrite: false }));
-    clock.scale.set(3.6, 1.8, 1); clock.position.y = 4.5; clock.renderOrder = 6; hub.add(clock);
+    clock.scale.set(3.6, 1.8, 1); clock.position.y = 4.5; clock.renderOrder = 6; clock.userData.camKeep = true; hub.add(clock);
     this.drawClock('');
     // 섬 밑 (떨어질 때 보이는 단면) — 구역이 다 떨어져도 바닥 테두리는 남는다
     const under = new THREE.Mesh(new THREE.CylinderGeometry(R1 * 0.55, 2.2, 7, 24), mat('#ffd1e6', { rough: 0.8 }));
