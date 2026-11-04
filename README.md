@@ -5,7 +5,7 @@
 태블릿 가로 화면을 기준으로 만들었다. **삼대710 제작**
 
 - **플레이: https://dew978.github.io/mallang-quiz-party/**
-- 기획서: [기획서.md](기획서.md) · 제작 과정: [docs/제작과정.md](docs/제작과정.md) · 이어서 작업하기: [docs/이어서-작업하기.md](docs/이어서-작업하기.md)
+- 기획서: [기획서.md](기획서.md) · 제작 과정: [docs/제작과정.md](docs/제작과정.md) · 이어서 작업하기: [docs/이어서-작업하기.md](docs/이어서-작업하기.md) · **수정 기록: [docs/수정기록.md](docs/수정기록.md)**
 
 ![타이틀](assets/images/title.png)
 
