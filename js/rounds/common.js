@@ -11,7 +11,7 @@ import { PAL, stripeTex, platform } from './stage.js';
 const coinGeo = new THREE.CylinderGeometry(0.34, 0.34, 0.09, 18).rotateZ(Math.PI / 2);
 export class Coins {
   constructor(session, parent) { this.s = session; this.list = []; this.parent = parent; this.m = mat('#ffd23f', { rough: 0.25, metal: 0.55, emissive: 0.15 }); }
-  add(x, y, z) { const c = new THREE.Mesh(coinGeo, this.m); c.position.set(x, y + 0.9, z); c.castShadow = false; this.parent.add(c); this.list.push(c); return c; }
+  add(x, y, z) { const c = new THREE.Mesh(coinGeo, this.m); c.position.set(x, y + 0.9, z); c.castShadow = false; c.userData.camKeep = true; this.parent.add(c); this.list.push(c); return c; }
   line(x1, z1, x2, z2, n, y = 0) { for (let i = 0; i < n; i++) { const k = n === 1 ? 0.5 : i / (n - 1); this.add(x1 + (x2 - x1) * k, y, z1 + (z2 - z1) * k); } }
   update(dt, t) {
     const me = this.s.me; if (!me) return;
@@ -40,6 +40,7 @@ export function sweeper(session, parent, { x = 0, y = 0, z, len = 8, speed = 1.6
     session.world.add({ kind: 'cyl', x, y: y + 0.7, z, r: 0.75, hy: 0.7, noSafe: true });
   }
   const arm = new THREE.Group(); arm.position.y = height; g.add(arm);
+  arm.userData.camKeep = true;   // 피해야 하는 막대는 카메라를 가려도 늘 보이게 (기둥만 숨겨짐)
   const L = both ? len * 2 : len;
   const barM = mat('#ffffff', { map: (() => { const t = stripeTex(color, '#ffffff', 10).clone(); t.needsUpdate = true; t.repeat.set(L / 2, 1); return t; })(), rough: 0.35 });
   const bar = new THREE.Mesh(new RoundedBoxGeometry(L, 0.5, 0.5, 2, 0.22), barM); bar.position.x = both ? 0 : len / 2; bar.castShadow = !low(); arm.add(bar);
@@ -79,6 +80,7 @@ export function pendulum(session, parent, { z, y = 0, x = 0, width = 16, len = 6
   session.world.add({ kind: 'cyl', x: x - width / 2 - 0.6, y: y + top / 2, z, r: 0.34, hy: top / 2, noSafe: true });
   session.world.add({ kind: 'cyl', x: x + width / 2 + 0.6, y: y + top / 2, z, r: 0.34, hy: top / 2, noSafe: true });
   const piv = new THREE.Group(); piv.position.y = top; g.add(piv);
+  piv.userData.camKeep = true;   // 흔들리는 공은 늘 보이게 (틀만 숨겨짐)
   const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, len, 6), mat('#ffffff')); rope.position.y = -len / 2; piv.add(rope);
   const ball = new THREE.Mesh(new THREE.SphereGeometry(1.0, 22, 16), mat('#ffffff', { map: (() => { const t = stripeTex(color, '#ffffff', 8).clone(); t.needsUpdate = true; t.repeat.set(2, 1); return t; })(), rough: 0.3 }));
   ball.position.y = -len; ball.castShadow = !low(); piv.add(ball);

@@ -98,6 +98,7 @@ export class BalloonsRound {
   makeBalloon(i, text, x, y, z, rng = Math.random) {
     const st = ANSWER_STYLE[i];
     const g = new THREE.Group(); g.position.set(x, y, z);
+    g.userData.camKeep = true;   // 정답 풍선은 카메라를 가려도 숨기지 않는다
     const m = new THREE.Mesh(balloonGeo, mat(st.hex, { rough: 0.18 })); m.scale.set(1, 1.15, 1); m.castShadow = !low(); g.add(m);
     const knot = new THREE.Mesh(knotGeo, mat(st.dark)); knot.position.y = -0.95; knot.rotation.x = Math.PI; g.add(knot);
     const string = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 1.2, 4), mat('#ffffff')); string.position.y = -1.6; g.add(string);
