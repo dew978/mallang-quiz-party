@@ -49,6 +49,11 @@ export const ROUNDS = [
   { id: 'doors', name: '정답 문 대시', icon: '🚪', rule: '정답이 적힌 문으로 돌진! 틀린 문은 띠용~ 튕겨요', how: '벽마다 문제 1개 · 장애물을 피해 결승선까지', bgm: 'round_a' },
   { id: 'tiles', name: '젤리 발판 서바이벌', icon: '🟩', rule: '시간 안에 정답 발판 위로! 틀린 발판은 떨어져요', how: '문제 8개 · 회전 막대는 점프로 넘어요', bgm: 'round_b' },
   { id: 'paint', name: '정답 물감 땅따먹기', icon: '🎨', rule: '정답 물감통에 뛰어들면 내 색 물감이 묻어요! 달리는 곳마다 내 땅', how: '문제 6개 · 가장 넓게 칠하면 보너스 별', bgm: 'round_a' },
+  // 2026-11-05 추가 4종 (밀기·통과·거꾸로 달리기·들고 나르기)
+  { id: 'ball', name: '정답 공 골인', icon: '⚽', rule: '보기 공을 다 같이 밀어서 정답 공을 골대에! 틀린 공은 골대가 뱉어요', how: '문제 5개 · 민 사람 모두 별, 넣은 사람은 1개 더', bgm: 'round_b' },
+  { id: 'hoops', name: '정답 링 통과', icon: '⭕', rule: '정답 고리를 통과해요! 높은 고리는 트램펄린으로 튀어 올라요', how: '문제 5개 · 먼저 통과할수록 별 3·2·1', bgm: 'round_a' },
+  { id: 'belt', name: '정답 과일 컨베이어', icon: '🍓', rule: '뒤로 흐르는 길을 거꾸로 달리며 정답 과일만 냠! 틀린 과일은 퉁', how: '문제 5개 · 한 문제에 정답 과일 2개까지', bgm: 'round_b' },
+  { id: 'parcel', name: '정답 택배 배달', icon: '📦', rule: '정답 택배를 번쩍 들고 우체통에 쏙! 다이브로 빼앗을 수 있어요', how: '문제 5개 · 정답 택배는 문제마다 3개뿐', bgm: 'round_a' },
   { id: 'tower', name: '결승: 왕관 구름 계단', icon: '👑', rule: '정답 점프대를 밟고 위로! 꼭대기 왕관을 잡아요', how: '점프대 문제 4개 · 왕관을 먼저 잡으면 우승', bgm: 'final' },
 ];
 export const roundById = id => ROUNDS.find(r => r.id === id);

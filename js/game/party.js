@@ -10,13 +10,22 @@ const loaders = {
   doors: () => import('../rounds/doors.js').then(m => m.DoorsRound),
   tiles: () => import('../rounds/tiles.js').then(m => m.TilesRound),
   paint: () => import('../rounds/paint.js').then(m => m.PaintRound),
+  ball: () => import('../rounds/ball.js').then(m => m.BallRound),
+  hoops: () => import('../rounds/hoops.js').then(m => m.HoopsRound),
+  belt: () => import('../rounds/belt.js').then(m => m.BeltRound),
+  parcel: () => import('../rounds/parcel.js').then(m => m.ParcelRound),
   tower: () => import('../rounds/tower.js').then(m => m.TowerRound),
 };
-export const Q_PER_ROUND = { doors: 4, tiles: 8, paint: 6, tower: 4 };
+export const Q_PER_ROUND = { doors: 4, tiles: 8, paint: 6, ball: 5, hoops: 5, belt: 5, parcel: 5, tower: 4 };
+// 파티 쇼: 결승 말고 7종 중 3개를 고른다. 같은 종류(고르기형·움직이기형)만 몰리지 않게 새 라운드를 1개 이상 넣는다
+const CLASSIC = ['doors', 'tiles', 'paint'], FRESH = ['ball', 'hoops', 'belt', 'parcel'];
 
 export function roundOrder(mode) {
   if (mode !== 'show') return [mode];
-  const a = ['doors', 'tiles', 'paint'].sort(() => Math.random() - 0.5);
+  const mix = a => a.slice().sort(() => Math.random() - 0.5);
+  const fresh = mix(FRESH), classic = mix(CLASSIC);
+  const nFresh = 1 + Math.floor(Math.random() * 2);       // 새 라운드 1~2개
+  const a = mix([...fresh.slice(0, nFresh), ...classic.slice(0, 3 - nFresh)]);
   return [...a, 'tower'];
 }
 

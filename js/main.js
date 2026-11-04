@@ -9,7 +9,7 @@ import { save, persist, resetSave, touchDevice } from './save.js';
 import { loadQuestions, subjectsFor, nextQuestion, recordAnswer, notesFor, subjectKey, bankSize } from './quiz.js';
 import { stopSpeak, speakQuestion } from './tts.js';
 import { CHARACTERS, HATS, TRAILS, ROUNDS, ANSWER_STYLE, charById } from './data/game.js';
-import { Party, soloRoster } from './game/party.js';
+import { Party, soloRoster, Q_PER_ROUND } from './game/party.js';
 import { hud, esc } from './game/hud.js';
 import { portrait } from './ui/portrait.js';
 import { showHero, hideHero } from './ui/showcase.js';
@@ -321,7 +321,7 @@ async function buildShop() {
 function btn(t, c) { const b = document.createElement('button'); b.className = 'btn ' + c; b.textContent = t; return b; }
 
 // ---------- 혼자 파티: 모드 → 캐릭터 ----------
-const MODES = [{ id: 'show', name: '파티 쇼', icon: '🎉', rule: '라운드 3개 + 결승! 별을 가장 많이 모으면 우승', how: '약 8분 · 문제 22개' }, ...ROUNDS.map(r => ({ ...r }))];
+const MODES = [{ id: 'show', name: '파티 쇼', icon: '🎉', rule: '라운드 3개 + 결승! 별을 가장 많이 모으면 우승', how: '약 8분 · 문제 20개쯤 · 8종 중 4라운드' }, ...ROUNDS.map(r => ({ ...r }))];
 let modeIdx = 0, charIdx = 0, lastSetup = null;
 function pickMode() {
   go('pick');
@@ -443,18 +443,18 @@ actions.back = () => {
 };
 window.__app = app;
 // 개발용: 라운드 무대 사진 찍기 (모드 카드 그림). 개발 서버에서만 저장된다.
-app.shots = async () => {
+app.shots = async (ids = ['doors', 'tiles', 'paint', 'ball', 'hoops', 'belt', 'parcel', 'tower']) => {
   const { Session } = await import('./game/session.js');
   const { questionSet } = await import('./quiz.js');
   const out = [];
-  for (const id of ['doors', 'tiles', 'paint', 'tower']) {
+  for (const id of ids) {
     const mod = await import(`./rounds/${id}.js`);
     const RC = Object.values(mod).find(v => typeof v === 'function');
-    const s = new Session({ RoundClass: RC, questions: questionSet({ doors: 4, tiles: 8, paint: 6, tower: 4 }[id]), roster: soloRoster(), demo: true });
+    const s = new Session({ RoundClass: RC, questions: questionSet(Q_PER_ROUND[id]), roster: soloRoster(), demo: true });
     await s.build(); s.start(); session = s;
     await new Promise(r => setTimeout(r, 1500));
     // 물감 땅따먹기는 바닥이 칠해진 모습이 보이게 더 오래 돌린다
-    for (let i = 0; i < 60 * (id === 'paint' ? 40 : 12); i++) s.frame(1 / 60, false);
+    for (let i = 0; i < 60 * (id === 'paint' ? 40 : ['ball', 'hoops', 'belt', 'parcel'].includes(id) ? 22 : 12); i++) s.frame(1 / 60, false);
     s.render(0.016, false);
     const { renderer: R } = await import('./engine/core.js');
     s.render(0.016, false);
