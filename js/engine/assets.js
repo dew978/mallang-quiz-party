@@ -27,7 +27,8 @@ export function loadGLB(name) {
           const m = o.material;
           if (m && m.isMeshStandardMaterial) {
             if (low()) {
-              o.material = new THREE.MeshLambertMaterial({ map: m.map, color: m.color });
+              // 모델(TRELLIS)에는 법선이 없어서 GLTFLoader가 flatShading을 켜 둔다. 이걸 빠뜨리면 빛을 못 받아 새까맣게 나온다.
+              o.material = new THREE.MeshLambertMaterial({ map: m.map, color: m.color, flatShading: m.flatShading, vertexColors: m.vertexColors, side: m.side, transparent: m.transparent, opacity: m.opacity, alphaTest: m.alphaTest });
             } else { m.roughness = Math.max(0.5, m.roughness ?? 0.6); m.metalness = Math.min(0.1, m.metalness ?? 0); m.envMap = envMap; m.envMapIntensity = 0.45; }
           }
           if (o.material?.map) { o.material.map.anisotropy = low() ? 1 : 4; }
