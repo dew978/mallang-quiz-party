@@ -12,6 +12,10 @@ const AX_LAT = new THREE.Vector3(0, 0, 1);   // 모델 좌우 축: 이 축으로
 const AX_FWD = new THREE.Vector3(1, 0, 0);   // 모델 앞 축: 이 축으로 돌리면 옆으로 벌어진다
 const qa = new THREE.Quaternion(), qb = new THREE.Quaternion(), qm = new THREE.Quaternion();
 const info = new Map();   // 모델별 머리 치수
+// 기본 자세: 위팔 앞뒤(au)·아래팔 굽힘(al)·팔 벌림(ao), 허벅지 앞뒤(lu)·무릎(ll, -면 굽힘)·다리 벌림(lo)
+const REST = { hips: 0, spine: 0, head: 0, auL: 0, auR: 0, alL: 0.15, alR: 0.15, aoL: 0.08, aoR: 0.08, luL: 0, luR: 0, llL: 0, llR: 0, loL: 0, loR: 0 };
+const LAND_T = 0.26;      // 착지 무릎 굽힘 시간
+const clamp01 = x => Math.max(0, Math.min(1, x));
 
 export const modelName = (id, lod) => 'char_' + id + (lod && hasModel('char_' + id + '_lod') ? '_lod' : '');
 
@@ -98,7 +102,9 @@ export class Figure {
       this.arrow.scale.set(0.03, 0.03, 1); this.arrow.renderOrder = 21; this.root.add(this.arrow);
     }
     this.sq = { v: 0, x: 0 };
-    this.pitch = 0; this.roll = 0; this.spin = 0; this.emote = null;
+    this.pitch = 0; this.roll = 0; this.yawT = 0; this.spin = 0; this.emote = null;
+    this.cp = null;                        // 지금 자세 (목표 자세로 부드럽게 따라간다)
+    this.airT = 0; this.lastVy = 0; this.landT = 0; this.landK = 0; this.runK = 0;
     this.w = 0.5; this.bones = {};
     this.ready = this.build(charId, hat, lod);
   }
@@ -169,73 +175,138 @@ export class Figure {
     r.position.set(b.x, b.y, b.z);
     r.rotation.y = b.yaw;
     const hs = Math.hypot(b.vx, b.vz), st = b.state;
-    const run = b.grounded && st === 'normal' ? Math.min(1, hs / 6.5) : 0;
     const ph = b.stepPhase * 1.05;
-    // 착지 찌그러짐 (인형이라 말랑이보다 덜)
-    if (b.justLanded) this.sq.v -= Math.min(4, b.landImpact * 0.25);
-    if (b.justJumped) this.sq.v += 2.4;
+
+    // 뛰어오름·착지는 여기서 직접 잰다 (물리 한 걸음에만 켜지는 justJumped·justLanded는 그리는 프레임 사이에 놓칠 수 있고, 친구 몸에는 airTime이 없다)
+    if (!b.grounded) {
+      if (this.airT === 0 && b.vy > 3) { this.sq.v += 2.6; this.side = -(this.side || 1); }   // 뛸 때마다 앞에 드는 다리를 바꾼다
+      this.airT += dt; this.lastVy = b.vy;
+    } else {
+      if (this.airT > 0.12 && (st === 'normal' || st === 'launch')) {
+        this.landK = Math.min(1, Math.max(0.4, -this.lastVy / 13));
+        this.landT = LAND_T; this.sq.v -= 1.6 + 2.4 * this.landK;
+      }
+      this.airT = 0;
+    }
+    if (this.landT > 0) this.landT = Math.max(0, this.landT - dt);
     if (b.squish) { this.sq.v -= 3; b.squish = 0; }
+    this.runK += (Math.min(1.25, st === 'normal' && b.grounded ? hs / 7.3 : 0) - this.runK) * Math.min(1, dt * 10);
+    const air = !b.grounded && (this.airT > 0.07 || b.vy > 1);
+
+    // ---- 목표 자세 ----
+    const T = this.T || (this.T = {}); Object.assign(T, REST);
+    let pitchT = 0, rollT = 0, yawT = 0, bob = 0, stepSq = 0, k = 20;
+    if (st === 'normal' && !air) {
+      // 걷기·달리기: 천천히 움직여도 다리가 확실히 보이게(w), 빠르면 보폭·팔·숙임이 커진다(rr)
+      const m = this.runK, w = Math.min(1, m * 2.4), rr = Math.max(0, Math.min(1, (m - 0.3) / 0.5));
+      const s = Math.sin(ph), c = Math.cos(ph);
+      const A = (0.6 + 0.5 * rr) * w;                  // 허벅지 앞뒤
+      T.luL = s * A; T.luR = -s * A;
+      const knee = (0.85 + 0.75 * rr) * w;             // 앞으로 나가는 다리는 무릎을 굽혀 든다
+      const kick = 0.75 * rr * w;                      // 뛸 때는 뒤로 간 다리의 발꿈치를 차올린다 (뒤에서 보면 발바닥이 보이게)
+      T.llL = -0.12 * w - knee * Math.max(0, c) - kick * Math.max(0, -s); T.llR = -0.12 * w - knee * Math.max(0, -c) - kick * Math.max(0, s);
+      const B = (0.55 + 0.75 * rr) * w;                // 팔은 다리와 반대로
+      T.auL = -s * B; T.auR = s * B;
+      T.alL = T.alR = 0.2 + (0.25 + 0.75 * rr) * w;
+      T.aoL = T.aoR = 0.12 + (0.12 + 0.14 * rr) * w;
+      // 몸: 발이 모일 때 통 튀어 오르고, 디딜 때 살짝 찌그러지고, 디딘 다리 쪽으로 기우뚱, 허리를 비튼다
+      const hop = 1 - Math.abs(s);
+      bob = hop * hop * (0.06 + 0.1 * rr) * w;
+      stepSq = Math.pow(Math.abs(s), 8) * (0.04 + 0.04 * rr) * w;
+      rollT = s * (0.1 - 0.04 * rr) * w;
+      yawT = -s * (0.1 + 0.06 * rr) * w;
+      pitchT = (0.05 + 0.17 * rr) * w;
+      T.head = -pitchT * 0.6;
+      // 서 있을 때: 숨 쉬듯 살랑
+      const idle = 1 - w;
+      if (idle > 0) {
+        const br = Math.sin(t * 2.4);
+        bob += (br * 0.5 + 0.5) * 0.012 * idle;
+        T.aoL += (0.03 + br * 0.03) * idle; T.aoR += (0.03 - br * 0.03) * idle;
+        T.head += Math.sin(t * 0.9) * 0.06 * idle;
+        rollT += Math.sin(t * 1.2) * 0.02 * idle;
+      }
+    } else if (st === 'launch') {
+      // 슈퍼 점프: 두 팔 쭉 위로, 다리 모으고 살짝 굽힘
+      T.aoL = T.aoR = 2.6; T.auL = T.auR = 0.2; T.alL = T.alR = 0.1;
+      T.luL = T.luR = 0.25; T.llL = T.llR = -0.6;
+      pitchT = -0.15; k = 12;
+    } else if (st === 'normal') {
+      // 공중: 오를 때(한 무릎 번쩍, 두 팔 V자로 번쩍) → 꼭대기(무릎 당겨 웅크림) → 떨어질 때(다리 내리고 팔 파닥파닥)
+      const rise = clamp01((b.vy - 0.5) / 5), fall = clamp01((-b.vy - 0.5) / 5), top = Math.max(0, 1 - rise - fall);
+      const a = (this.side || 1) > 0 ? 'L' : 'R', o = a === 'L' ? 'R' : 'L';   // a: 앞으로 드는 다리
+      T['lu' + a] = rise * 1.35; T['ll' + a] = rise * -1.8;
+      T['lu' + o] = rise * -0.45; T['ll' + o] = rise * -0.5;
+      T.aoL = T.aoR = 0.08 + rise * 2.15; T.auL = T.auR = rise * 0.45; T.alL = T.alR = 0.15 + rise * 0.1;
+      // 꼭대기: 두 무릎을 당기고 팔을 옆으로
+      T.luL += top * 1.1; T.luR += top * 1.0; T.llL += top * -1.7; T.llR += top * -1.6;
+      T.auL += top * 0.45; T.auR += top * 0.45; T.alL += top * 0.7; T.alR += top * 0.7; T.aoL += top * 1.25; T.aoR += top * 1.25;
+      // 떨어질 때: 다리를 아래로 벌리고 팔을 위아래로 파닥파닥
+      const fl = Math.sin(t * 19) * 0.55;
+      T.luL += fall * 0.4; T.luR += fall * -0.1; T.llL += fall * -0.6; T.llR += fall * -0.25; T.loL += fall * 0.3; T.loR += fall * 0.3;
+      T.auL += fall * 0.25; T.auR += fall * 0.25; T.alL += fall * 0.25; T.alR += fall * 0.25; T.aoL += fall * (1.75 + fl); T.aoR += fall * (1.75 + fl);
+      pitchT = rise * 0.14 + top * 0.1 + fall * -0.1;     // 오를 땐 앞으로 쭉, 떨어질 땐 몸을 젖혀 착지 준비
+      T.head = rise * -0.25 + fall * 0.2;
+      bob = top * 0.08;
+      k = 14;
+    } else if (st === 'dive' || st === 'slide') {
+      pitchT = st === 'dive' ? 1.2 : 1.4;
+      T.auL = T.auR = 2.7; T.alL = T.alR = 0.1; T.aoL = T.aoR = 0.25;
+      T.luL = T.luR = -0.35; T.llL = T.llR = -0.5;
+      T.head = -0.7;
+      if (st === 'slide') bob = -0.12;
+    } else if (st === 'getup') {
+      pitchT = 0.5; T.auL = T.auR = 1.0;
+    } else if (st === 'knock') {
+      if (!b.grounded) { this.spin += dt * 14; pitchT = this.spin; } else { pitchT = -1.35; this.spin = 0; }
+      T.aoL = T.aoR = 1.4; T.luL = 0.5; T.luR = -0.3; T.loL = 0.3; T.loR = 0.3;
+    } else if (st === 'stun') {
+      rollT = Math.sin(t * 7) * 0.14; pitchT = 0.08;
+      T.head = 0.35 + Math.sin(t * 7) * 0.1; T.aoL = 0.25 + Math.sin(t * 7) * 0.15; T.aoR = 0.25 - Math.sin(t * 7) * 0.15; T.auL = T.auR = -0.1; T.alL = T.alR = 0.05;
+    }
+    // 착지: 무릎을 굽혀 쿵 받는다
+    if (this.landT > 0 && st === 'normal') {
+      const x = this.landT / LAND_T, lk = Math.sin(x * Math.PI * 0.5) * this.landK;   // 처음이 가장 깊다
+      T.luL += 0.8 * lk; T.luR += 0.8 * lk; T.llL -= 1.4 * lk; T.llR -= 1.4 * lk;
+      T.auL += 0.5 * lk; T.auR += 0.5 * lk; T.aoL += 0.5 * lk; T.aoR += 0.5 * lk;
+      bob -= 0.17 * lk; pitchT += 0.22 * lk; T.head -= 0.15 * lk;
+      k = 30;
+    }
+    if (this.emote === 'cheer') {
+      const q = Math.abs(Math.sin(t * 7));
+      T.aoL = 2.55 + q * 0.25; T.aoR = 2.55 + (1 - q) * 0.25; T.auL = T.auR = 0.15; T.alL = T.alR = 0.35;
+      bob = q * 0.22; rollT = Math.sin(t * 7) * 0.08; T.head = -0.15;
+      T.luL = T.luR = 0; T.llL = T.llR = 0; yawT = 0; stepSq = 0;
+      if (q > 0.6) { T.llL = T.llR = -0.5 * (q - 0.6); }
+    } else if (this.emote === 'sad') { T.head = 0.45; T.spine = 0.12; T.aoL = T.aoR = 0.02; T.auL = T.auR = 0.05; pitchT = 0.12; }
+    if (st !== 'knock') this.spin = 0;
+
+    // ---- 지금 자세를 목표로 부드럽게 ----
+    const cp = this.cp || (this.cp = { ...T });
+    const f = Math.min(1, dt * k);
+    for (const key in T) cp[key] += (T[key] - cp[key]) * f;
+    const kk = st === 'knock' && !b.grounded ? 1 : Math.min(1, dt * 14);
+    this.pitch += (pitchT - this.pitch) * kk;
+    this.roll += (rollT - this.roll) * Math.min(1, dt * 14);
+    this.yawT += (yawT - this.yawT) * Math.min(1, dt * 14);
+    this.tilt.rotation.x = this.pitch; this.tilt.rotation.z = this.roll; this.tilt.rotation.y = this.yawT;
+    this.bobV = (this.bobV ?? bob) + (bob - (this.bobV ?? bob)) * Math.min(1, dt * 22);
+    this.tilt.position.y = FIG_H * 0.5 + this.bobV - (st === 'slide' ? 0.3 : 0) - (st === 'knock' && b.grounded ? 0.35 : 0);
+
+    // 찌그러짐: 착지·뛰어오름 용수철 + 걸음마다 콩
     this.sq.v += (-this.sq.x * 260 - this.sq.v * 16) * dt; this.sq.x += this.sq.v * dt;
-    let sy = 1 + this.sq.x * 0.35;
-    if (!b.grounded && st !== 'dive' && st !== 'knock') sy += Math.max(-0.04, Math.min(0.06, b.vy * 0.006));
+    let sy = 1 + this.sq.x * 0.35 - stepSq;
+    if (!b.grounded && st !== 'dive' && st !== 'knock') sy += Math.max(-0.04, Math.min(0.1, b.vy * 0.011));   // 오를 때 길쭉
     sy = Math.max(0.78, Math.min(1.2, sy));
     const sxz = 1 / Math.sqrt(sy);
     this.squash.scale.set(sxz, sy, sxz);
 
-    // 자세 값 (L/R 팔·다리)
-    let pitchT = 0, rollT = 0, bob = 0;
-    let spine = 0, head = 0, hips = 0;
-    let auL = 0, auR = 0, alL = 0.15, alR = 0.15, aoL = 0.05, aoR = 0.05;   // 팔: 위팔 앞뒤 · 아래팔 굽힘 · 벌림
-    let luL = 0, luR = 0, llL = 0, llR = 0, loL = 0, loR = 0;               // 다리
-    if (st === 'normal' && b.grounded) {
-      const s = Math.sin(ph), c = Math.cos(ph);
-      luL = s * 0.8 * run; luR = -s * 0.8 * run;
-      llL = -run * 0.95 * (0.5 - 0.5 * c); llR = -run * 0.95 * (0.5 + 0.5 * c);
-      auL = -s * 0.75 * run; auR = s * 0.75 * run; alL = alR = 0.15 + 0.55 * run;
-      spine = -0.14 * run; head = 0.08 * run;
-      bob = Math.abs(s) * 0.05 * run;
-      rollT = s * 0.04 * run;
-      if (run < 0.1) { const br = Math.sin(t * 2.4); spine = br * 0.025; aoL = 0.07 + br * 0.03; aoR = 0.07 - br * 0.03; head = Math.sin(t * 0.9) * 0.05; }
-    } else if (st === 'normal' || st === 'launch') {
-      const fall = b.vy < -2, fl = fall ? Math.sin(t * 20) * 0.35 : 0;
-      aoL = 1.15 + fl; aoR = 1.15 - fl; auL = auR = 0.35; alL = alR = 0.4;
-      luL = 0.7; llL = -1.1; luR = -0.15; llR = -0.4;
-      spine = 0.05; head = -0.1;
-      pitchT = st === 'launch' ? -0.15 : 0.06;
-      if (st === 'launch') { aoL = aoR = 2.5; auL = auR = 0.2; }
-    } else if (st === 'dive' || st === 'slide') {
-      pitchT = st === 'dive' ? 1.2 : 1.4;
-      auL = auR = 2.7; alL = alR = 0.1; aoL = aoR = 0.25;
-      luL = luR = -0.35; llL = llR = -0.5;
-      head = -0.7;
-      if (st === 'slide') bob = -0.12;
-    } else if (st === 'getup') {
-      pitchT = 0.5; auL = auR = 1.0;
-    } else if (st === 'knock') {
-      if (!b.grounded) { this.spin += dt * 14; pitchT = this.spin; } else { pitchT = -1.35; this.spin = 0; }
-      aoL = aoR = 1.4; luL = 0.5; luR = -0.3; loL = 0.3; loR = 0.3;
-    } else if (st === 'stun') {
-      rollT = Math.sin(t * 7) * 0.14; pitchT = 0.08;
-      head = 0.35 + Math.sin(t * 7) * 0.1; aoL = 0.25 + Math.sin(t * 7) * 0.15; aoR = 0.25 - Math.sin(t * 7) * 0.15; auL = auR = -0.1; alL = alR = 0.05;
-    }
-    if (this.emote === 'cheer') {
-      const k = Math.abs(Math.sin(t * 7));
-      aoL = 2.55 + k * 0.25; aoR = 2.55 + (1 - k) * 0.25; auL = auR = 0.15; alL = alR = 0.35;
-      bob = k * 0.22; rollT = Math.sin(t * 7) * 0.08; head = -0.15;
-      luL = luR = 0; llL = llR = 0;
-    } else if (this.emote === 'sad') { head = 0.45; spine = 0.12; aoL = aoR = 0.02; auL = auR = 0.05; pitchT = 0.12; }
-    if (st !== 'knock') this.spin = 0;
-    const kk = st === 'knock' && !b.grounded ? 1 : Math.min(1, dt * 14);
-    this.pitch += (pitchT - this.pitch) * kk;
-    this.roll += (rollT - this.roll) * Math.min(1, dt * 12);
-    this.tilt.rotation.x = this.pitch; this.tilt.rotation.z = this.roll;
-    this.tilt.position.y = FIG_H * 0.5 + bob - (st === 'slide' ? 0.3 : 0) - (st === 'knock' && b.grounded ? 0.35 : 0);
     // 뼈: 등뼈·머리는 위를 향한 뼈라 앞으로 숙이려면 -pitch
-    this.pose('hips', hips); this.pose('spine', spine); this.pose('head', -head);
-    this.pose('arm_uL', auL, aoL); this.pose('arm_uR', auR, -aoR);
-    this.pose('arm_lL', alL); this.pose('arm_lR', alR);
-    this.pose('leg_uL', luL, loL); this.pose('leg_uR', luR, -loR);
-    this.pose('leg_lL', llL); this.pose('leg_lR', llR);
+    this.pose('hips', cp.hips); this.pose('spine', cp.spine); this.pose('head', -cp.head);
+    this.pose('arm_uL', cp.auL, cp.aoL); this.pose('arm_uR', cp.auR, -cp.aoR);
+    this.pose('arm_lL', cp.alL); this.pose('arm_lR', cp.alR);
+    this.pose('leg_uL', cp.luL, cp.loL); this.pose('leg_uR', cp.luR, -cp.loR);
+    this.pose('leg_lL', cp.llL); this.pose('leg_lR', cp.llR);
     const dizzy = st === 'stun' || (st === 'knock' && b.grounded);
     this.stars.visible = dizzy;
     if (dizzy) this.stars.children.forEach((s, i) => { const a = t * 5 + i * 2.09; s.position.set(Math.cos(a) * 0.42, FIG_H + 0.12 + Math.sin(a * 2) * 0.05, Math.sin(a) * 0.42); });
