@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { initCore, renderer, applyQuality, low } from './engine/core.js';
 import { loadManifest, loadGLB } from './engine/assets.js';
-import { loadCharColors } from './engine/mallang.js';
+import { modelName } from './engine/figure.js';
 import { initTouch, input, clearInput } from './engine/input.js';
 import { audio } from './audio.js';
 import { save, persist, resetSave, touchDevice } from './save.js';
@@ -30,9 +30,9 @@ async function boot() {
   initTouch();
   await loadManifest();
   step(0.2, '소리를 불러오는 중...');
-  await Promise.all([audio.init(), loadQuestions(), loadCharColors()]);
-  step(0.55, '말랑이들을 깨우는 중...');
-  await Promise.all([...CHARACTERS.map(c => loadGLB('char_' + c.id)), ...HATS.filter(h => h.id !== 'none').map(h => loadGLB('hat_' + h.id))]);
+  await Promise.all([audio.init(), loadQuestions()]);
+  step(0.55, '대원들을 깨우는 중...');
+  await Promise.all([...CHARACTERS.map(c => loadGLB(modelName(c.id, false))), ...CHARACTERS.map(c => loadGLB(modelName(c.id, true))), ...HATS.filter(h => h.id !== 'none').map(h => loadGLB('hat_' + h.id))]);
   step(0.9, '거의 다 됐어요!');
   await loadTitleArt();
   step(1, '');
@@ -327,7 +327,7 @@ async function pickChar() {
   const list = CHARACTERS.filter(c => save.ownedChars.includes(c.id));
   charIdx = Math.max(0, list.findIndex(c => c.id === save.selChar));
   const cards = await Promise.all(list.map(async c => ({ title: c.name, sub: c.animal, img: await portrait(c.id, save.equip.hat) })));
-  const info = () => { const c = list[charIdx]; $('pickInfo').innerHTML = `<b>${c.name}</b> · ${c.desc}<br><small>더 많은 말랑이는 상점에서 만날 수 있어요</small>`; };
+  const info = () => { const c = list[charIdx]; $('pickInfo').innerHTML = `<b>${c.name}</b> · ${c.desc}<br><small>더 많은 친구는 상점에서 만날 수 있어요</small>`; };
   cover($('pickCover'), cards, charIdx, i => { charIdx = i; info(); }, () => $('pickGo').click());
   info();
   $('pickGo').textContent = '파티 시작!';
@@ -431,13 +431,14 @@ app.shots = async () => {
   const { Session } = await import('./game/session.js');
   const { questionSet } = await import('./quiz.js');
   const out = [];
-  for (const id of ['doors', 'tiles', 'balloons', 'tower']) {
+  for (const id of ['doors', 'tiles', 'paint', 'tower']) {
     const mod = await import(`./rounds/${id}.js`);
-    const RC = Object.values(mod)[0];
-    const s = new Session({ RoundClass: RC, questions: questionSet({ doors: 4, tiles: 8, balloons: 6, tower: 4 }[id]), roster: soloRoster(), demo: true });
+    const RC = Object.values(mod).find(v => typeof v === 'function');
+    const s = new Session({ RoundClass: RC, questions: questionSet({ doors: 4, tiles: 8, paint: 6, tower: 4 }[id]), roster: soloRoster(), demo: true });
     await s.build(); s.start(); session = s;
     await new Promise(r => setTimeout(r, 1500));
-    for (let i = 0; i < 60 * 12; i++) s.frame(1 / 60, false);
+    // 물감 땅따먹기는 바닥이 칠해진 모습이 보이게 더 오래 돌린다
+    for (let i = 0; i < 60 * (id === 'paint' ? 40 : 12); i++) s.frame(1 / 60, false);
     s.render(0.016, false);
     const { renderer: R } = await import('./engine/core.js');
     s.render(0.016, false);

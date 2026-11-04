@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { scene as SC, camera, renderer, clock, adaptResolution, low } from '../engine/core.js';
 import { World, makeBody, stepBody, collideBodies, setState, P } from '../engine/physics.js';
-import { Mallang } from '../engine/mallang.js';
+import { Figure } from '../engine/figure.js';
 import { initFx, updateFx, fx, shake } from '../engine/fx.js';
 import { CameraOcclusion } from '../engine/occlusion.js';
 import { input, moveVector, consumeEdges, clearInput } from '../engine/input.js';
@@ -39,7 +39,7 @@ export class Session {
     this.round = new this.opts.RoundClass(this);
     await this.round.build();
     this.players.forEach(p => {
-      p.view = new Mallang(p.charId, { name: p.me ? (save.settings.name || '나') : p.name, me: p.me, hat: p.hat || 'none', showName: true });
+      p.view = new Figure(p.charId, { name: p.me ? (save.settings.name || '나') : p.name, me: p.me, hat: p.hat || 'none', showName: true });
       p.view.addTo(this.scene);
       p.trail = TRAILS.find(t => t.id === p.trail) || null;
     });

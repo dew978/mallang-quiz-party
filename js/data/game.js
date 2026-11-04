@@ -1,13 +1,17 @@
 // 게임 데이터: 캐릭터, 치장, 라운드, 보기 색
 
-// 말랑이 6종. 능력치는 없다(모두 공정). body/accent는 코드로 붙이는 손·발 색 (chars_colors.json이 있으면 덮어씀)
+// 캐릭터 10종 (미니 유물레이더스 대원 5 + 같은 스타일로 새로 만든 5). 능력치는 없다(모두 공정). animal 칸 = 직업
 export const CHARACTERS = [
-  { id: 'mochi', name: '모찌', animal: '토끼', desc: '귀가 쫑긋! 언제나 신나는 토끼', body: '#fff6f1', accent: '#f6a5b8', price: 0 },
-  { id: 'bori', name: '보리', animal: '아기 곰', desc: '느긋하지만 한번 뛰면 멈추지 않는 곰', body: '#b98458', accent: '#7a4f2e', price: 0 },
-  { id: 'ppiyak', name: '삐약', animal: '병아리', desc: '작아도 목소리는 제일 큰 병아리', body: '#ffe27a', accent: '#ff9f2e', price: 0 },
-  { id: 'cheese', name: '치즈', animal: '고양이', desc: '호기심 대장 주황 고양이', body: '#ffb35c', accent: '#e07a26', price: 400 },
-  { id: 'dino', name: '디노', animal: '아기 공룡', desc: '꼬리를 흔들며 달리는 아기 공룡', body: '#8fe0b8', accent: '#3fae7c', price: 400 },
-  { id: 'pangi', name: '팡이', animal: '판다', desc: '대나무보다 퀴즈를 더 좋아하는 판다', body: '#f7f7f4', accent: '#2d2d33', price: 400 },
+  { id: 'scout', name: '안테나', animal: '탐험가', desc: '고글과 안테나로 정답 신호를 잡는 꼬마 탐험가', price: 0 },
+  { id: 'rifle', name: '방울', animal: '물보라꾼', desc: '물감 탱크를 메고 씩씩하게 달리는 대원', price: 0 },
+  { id: 'brawler', name: '단단', animal: '망치꾼', desc: '커다란 장갑으로 문도 쾅! 힘센 친구', price: 0 },
+  { id: 'kitty', name: '냥냥', animal: '고양이 후드', desc: '헤드폰을 걸고 사뿐사뿐 달리는 고양이 소녀', price: 0 },
+  { id: 'robot', name: '삐빅', animal: '로봇', desc: '화면 얼굴로 웃는 똑똑한 꼬마 로봇', price: 300 },
+  { id: 'inventor', name: '뚝딱', animal: '발명가', desc: '공구 벨트에 무엇이든 고치는 꼬마 발명가', price: 300 },
+  { id: 'bomber', name: '퐁퐁', animal: '풍선꾼', desc: '물감 풍선을 주렁주렁 단 우주 꼬마', price: 400 },
+  { id: 'sniper', name: '모노', animal: '치유사', desc: '외눈 렌즈로 문제를 꼼꼼히 살피는 친구', price: 400 },
+  { id: 'wizard', name: '반짝', animal: '마법사', desc: '두꺼운 책을 멘 별빛 꼬마 마법사', price: 500 },
+  { id: 'knight', name: '용감', animal: '꼬마 기사', desc: '둥근 방패를 멘 용감한 꼬마 기사', price: 500 },
 ];
 export const charById = id => CHARACTERS.find(c => c.id === id) || CHARACTERS[0];
 
@@ -44,7 +48,7 @@ export const ANSWER_STYLE = [
 export const ROUNDS = [
   { id: 'doors', name: '정답 문 대시', icon: '🚪', rule: '정답이 적힌 문으로 돌진! 틀린 문은 띠용~ 튕겨요', how: '벽마다 문제 1개 · 장애물을 피해 결승선까지', bgm: 'round_a' },
   { id: 'tiles', name: '젤리 발판 서바이벌', icon: '🟩', rule: '시간 안에 정답 발판 위로! 틀린 발판은 떨어져요', how: '문제 8개 · 회전 막대는 점프로 넘어요', bgm: 'round_b' },
-  { id: 'balloons', name: '정답 풍선 사냥', icon: '🎈', rule: '정답 풍선을 먼저 터뜨려요! 한 문제에 하나만', how: '문제 6개 · 높은 풍선은 트램펄린으로', bgm: 'round_a' },
+  { id: 'paint', name: '정답 물감 땅따먹기', icon: '🎨', rule: '정답 물감통에 뛰어들면 내 색 물감이 묻어요! 달리는 곳마다 내 땅', how: '문제 6개 · 가장 넓게 칠하면 보너스 별', bgm: 'round_a' },
   { id: 'tower', name: '결승: 왕관 구름 계단', icon: '👑', rule: '정답 점프대를 밟고 위로! 꼭대기 왕관을 잡아요', how: '점프대 문제 4개 · 왕관을 먼저 잡으면 우승', bgm: 'final' },
 ];
 export const roundById = id => ROUNDS.find(r => r.id === id);

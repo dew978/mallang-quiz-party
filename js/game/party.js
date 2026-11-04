@@ -9,14 +9,14 @@ import { hud } from './hud.js';
 const loaders = {
   doors: () => import('../rounds/doors.js').then(m => m.DoorsRound),
   tiles: () => import('../rounds/tiles.js').then(m => m.TilesRound),
-  balloons: () => import('../rounds/balloons.js').then(m => m.BalloonsRound),
+  paint: () => import('../rounds/paint.js').then(m => m.PaintRound),
   tower: () => import('../rounds/tower.js').then(m => m.TowerRound),
 };
-export const Q_PER_ROUND = { doors: 4, tiles: 8, balloons: 6, tower: 4 };
+export const Q_PER_ROUND = { doors: 4, tiles: 8, paint: 6, tower: 4 };
 
 export function roundOrder(mode) {
   if (mode !== 'show') return [mode];
-  const a = ['doors', 'tiles', 'balloons'].sort(() => Math.random() - 0.5);
+  const a = ['doors', 'tiles', 'paint'].sort(() => Math.random() - 0.5);
   return [...a, 'tower'];
 }
 
