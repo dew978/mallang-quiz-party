@@ -71,10 +71,12 @@ function loop(now) {
 }
 
 // ---------- 화면 전환 ----------
-function go(id, { back = false, reset = false, wipe = true } = {}) {
+// fill: 화면 내용을 채우는 함수. 물감이 화면을 다 덮은 순간에 돌려서, 바뀌는 내용이 전환 전에 비치지 않게 한다
+function go(id, { back = false, reset = false, wipe = true, fill = null } = {}) {
   if (reset) stack = [];
   else if (!back && screen && screen !== id && screen !== 'loading') stack.push(screen);
-  const doIt = () => {
+  const doIt = async () => {
+    if (fill) await fill();
     document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === 'scr-' + id));
     screen = id;
     if (id !== 'menu') hideHero();
@@ -324,7 +326,11 @@ function btn(t, c) { const b = document.createElement('button'); b.className = '
 const MODES = [{ id: 'show', name: '파티 쇼', icon: '🎉', rule: '라운드 3개 + 결승! 별을 가장 많이 모으면 우승', how: '약 8분 · 문제 20개쯤 · 8종 중 4라운드' }, ...ROUNDS.map(r => ({ ...r }))];
 let modeIdx = 0, charIdx = 0, lastSetup = null;
 function pickMode() {
-  go('pick');
+  // 캐릭터 그림은 미리 만들어 둔다 (다음 화면에서 바로 쓰게)
+  for (const c of CHARACTERS) if (save.ownedChars.includes(c.id)) portrait(c.id, save.equip.hat);
+  go('pick', { fill: fillMode });
+}
+function fillMode() {
   $('pickTitle').textContent = '무엇을 할까요?';
   setCoins($('pickCoins'));
   $('botSel').style.display = '';
@@ -336,13 +342,15 @@ function pickMode() {
   $('pickGo').textContent = '선택!';
   $('pickGo').onclick = () => { audio.play('click'); pickChar(); };
 }
-async function pickChar() {
-  go('pick');
+function pickChar() {
+  const list = CHARACTERS.filter(c => save.ownedChars.includes(c.id));
+  const cardsP = Promise.all(list.map(async c => ({ title: c.name, sub: c.animal, img: await portrait(c.id, save.equip.hat) })));
+  go('pick', { fill: async () => fillChar(list, await cardsP) });
+}
+function fillChar(list, cards) {
   $('pickTitle').textContent = '누구로 할까요?';
   $('botSel').style.display = 'none';
-  const list = CHARACTERS.filter(c => save.ownedChars.includes(c.id));
   charIdx = Math.max(0, list.findIndex(c => c.id === save.selChar));
-  const cards = await Promise.all(list.map(async c => ({ title: c.name, sub: c.animal, img: await portrait(c.id, save.equip.hat) })));
   const info = () => { const c = list[charIdx]; $('pickInfo').innerHTML = `<b>${c.name}</b> · ${c.desc}<br><small>더 많은 친구는 상점에서 만날 수 있어요</small>`; };
   cover($('pickCover'), cards, charIdx, i => { charIdx = i; info(); }, () => $('pickGo').click());
   info();
